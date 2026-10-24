@@ -5,10 +5,10 @@
 import FlutterMacOS
 import Foundation
 
-import flutter_libserialport
+import blue_monitor_lib
 import shared_preferences_foundation
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
-  FlutterLibserialportPlugin.register(with: registry.registrar(forPlugin: "FlutterLibserialportPlugin"))
+  BlueMonitorLibPlugin.register(with: registry.registrar(forPlugin: "BlueMonitorLibPlugin"))
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
 }

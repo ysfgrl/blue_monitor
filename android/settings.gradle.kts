@@ -24,11 +24,3 @@ plugins {
 }
 
 include(":app")
-
-// flutter_libserialport 0.6.0 calls jcenter(), which Gradle 9 removed.
-// Override only its Android build script, leaving the package cache untouched.
-findProject(":flutter_libserialport")?.let { serialPort ->
-    serialPort.buildFileName = serialPort.projectDir.toPath()
-        .relativize(file("compat/flutter_libserialport.gradle").toPath())
-        .toString()
-}

@@ -27,9 +27,8 @@ const _ubuntuTerminalTheme = xterm.TerminalTheme(
 );
 
 class TerminalPanel extends StatefulWidget {
-  const TerminalPanel({super.key, required this.monitor, required this.active});
+  const TerminalPanel({super.key, required this.active});
 
-  final MonitorController monitor;
   final bool active;
 
   @override
@@ -42,10 +41,10 @@ class _TerminalPanelState extends State<TerminalPanel>
   final _androidInputKey = GlobalKey<_AndroidTerminalInputState>();
   GlobalKey<xterm.TerminalViewState> _terminalViewKey =
       GlobalKey<xterm.TerminalViewState>();
+  late final SerialBloc _monitor;
   late xterm.Terminal _terminal;
   late StreamSubscription<Uint8List> _incoming;
   ByteConversionSink? _decoder;
-  late int _session;
   bool _connected = false;
   bool _ctrlPressed = false;
   bool _keyboardRequested = false;
@@ -55,15 +54,14 @@ class _TerminalPanelState extends State<TerminalPanel>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _monitor = context.read<SerialBloc>();
     _attachMonitor();
   }
 
   void _attachMonitor() {
-    _session = widget.monitor.session;
-    _connected = widget.monitor.isConnected;
+    _connected = _monitor.state.isConnected;
     _resetTerminal();
-    widget.monitor.addListener(_onConnectionChanged);
-    _incoming = widget.monitor.incomingBytes.listen((bytes) {
+    _incoming = _monitor.incomingBytes.listen((bytes) {
       _decoder?.add(bytes);
     });
   }
@@ -87,8 +85,9 @@ class _TerminalPanelState extends State<TerminalPanel>
   }
 
   void _sendOutput(String output) {
-    if (!widget.active || !widget.monitor.isConnected || output.isEmpty) return;
-    unawaited(widget.monitor.sendRaw(Uint8List.fromList(utf8.encode(output))));
+    if (!widget.active || !_monitor.state.isConnected || output.isEmpty) return;
+    if (_monitor.isClosed) return;
+    _monitor.add(SerialSendRequested(Uint8List.fromList(utf8.encode(output))));
   }
 
   void _clearCtrl() {
@@ -96,13 +95,13 @@ class _TerminalPanelState extends State<TerminalPanel>
   }
 
   void _toggleCtrl() {
-    if (!widget.active || !widget.monitor.isConnected) return;
+    if (!widget.active || !_monitor.state.isConnected) return;
     setState(() => _ctrlPressed = !_ctrlPressed);
     _keepKeyboardFocus();
   }
 
   void _pressTerminalKey(xterm.TerminalKey key) {
-    if (!widget.active || !widget.monitor.isConnected) return;
+    if (!widget.active || !_monitor.state.isConnected) return;
     _terminal.keyInput(key);
     _keepKeyboardFocus();
   }
@@ -112,14 +111,14 @@ class _TerminalPanelState extends State<TerminalPanel>
   }
 
   void _toggleKeyboard() {
-    if (!widget.active || !widget.monitor.isConnected) return;
+    if (!widget.active || !_monitor.state.isConnected) return;
     setState(() => _keyboardRequested = !_keyboardRequested);
     if (!_keyboardRequested) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted ||
           !_keyboardRequested ||
           !widget.active ||
-          !widget.monitor.isConnected) {
+          !_monitor.state.isConnected) {
         return;
       }
       _keepKeyboardFocus();
@@ -142,11 +141,10 @@ class _TerminalPanelState extends State<TerminalPanel>
     _keyboardWasVisible = visible;
   }
 
-  void _onConnectionChanged() {
-    final connected = widget.monitor.isConnected;
-    if (connected && _session != widget.monitor.session) {
+  void _onConnectionChanged(SerialState state) {
+    final connected = state.isConnected;
+    if (connected && !_connected) {
       _terminal.onOutput = null;
-      _session = widget.monitor.session;
       _resetTerminal();
       setState(() {});
     } else if (!connected && _connected) {
@@ -161,7 +159,7 @@ class _TerminalPanelState extends State<TerminalPanel>
 
   void _focusTerminal() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && widget.active && widget.monitor.isConnected) {
+      if (mounted && widget.active && _monitor.state.isConnected) {
         _focus.requestFocus();
       }
     });
@@ -170,12 +168,6 @@ class _TerminalPanelState extends State<TerminalPanel>
   @override
   void didUpdateWidget(covariant TerminalPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.monitor != widget.monitor) {
-      oldWidget.monitor.removeListener(_onConnectionChanged);
-      unawaited(_incoming.cancel());
-      _terminal.onOutput = null;
-      _attachMonitor();
-    }
     if (widget.active && !oldWidget.active) _focusTerminal();
     if (!widget.active) {
       _ctrlPressed = false;
@@ -187,7 +179,6 @@ class _TerminalPanelState extends State<TerminalPanel>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    widget.monitor.removeListener(_onConnectionChanged);
     unawaited(_incoming.cancel());
     _terminal.onOutput = null;
     _decoder?.close();
@@ -199,7 +190,7 @@ class _TerminalPanelState extends State<TerminalPanel>
   Widget build(BuildContext context) {
     final android = Theme.of(context).platform == TargetPlatform.android;
     final mobile = android || Theme.of(context).platform == TargetPlatform.iOS;
-    final enabled = widget.active && widget.monitor.isConnected;
+    final enabled = widget.active && _monitor.state.isConnected;
     Widget terminalView = xterm.TerminalView(
       _terminal,
       key: _terminalViewKey,
@@ -232,23 +223,27 @@ class _TerminalPanelState extends State<TerminalPanel>
         child: terminalView,
       );
     }
-    return ExcludeFocus(
-      excluding: !widget.active,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(13),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: terminalView),
-            _TerminalKeyBar(
-              enabled: enabled,
-              ctrlPressed: _ctrlPressed,
-              keyboardOpen: _keyboardRequested,
-              onKeyboardToggle: _toggleKeyboard,
-              onCtrlPressed: _toggleCtrl,
-              onKeyPressed: _pressTerminalKey,
-            ),
-          ],
+    return BlocListener<SerialBloc, SerialState>(
+      listenWhen: (previous, current) => previous.status != current.status,
+      listener: (_, state) => _onConnectionChanged(state),
+      child: ExcludeFocus(
+        excluding: !widget.active,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(13),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: terminalView),
+              _TerminalKeyBar(
+                enabled: enabled,
+                ctrlPressed: _ctrlPressed,
+                keyboardOpen: _keyboardRequested,
+                onKeyboardToggle: _toggleKeyboard,
+                onCtrlPressed: _toggleCtrl,
+                onKeyPressed: _pressTerminalKey,
+              ),
+            ],
+          ),
         ),
       ),
     );

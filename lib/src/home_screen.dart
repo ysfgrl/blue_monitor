@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 
-import 'serial_service.dart';
 import 'widgets/monitor_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, this.service});
-
-  final SerialService? service;
+  const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Blue Monitor"),
-      ),
+      appBar: AppBar(title: Text("Blue Monitor")),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -36,9 +31,7 @@ class HomeScreen extends StatelessWidget {
                       minimumSize: const Size(0, 56),
                     ),
                     onPressed: () => Navigator.of(context).push<void>(
-                      MaterialPageRoute(
-                        builder: (_) => MonitorScreen(service: service),
-                      ),
+                      MaterialPageRoute(builder: (_) => const MonitorScreen()),
                     ),
                     icon: const Icon(Icons.usb_rounded),
                     label: const Text('Serial terminal'),

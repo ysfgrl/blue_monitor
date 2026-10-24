@@ -15,7 +15,7 @@ class PortSelectionWidget extends StatefulWidget {
     required this.onDisconnect,
   });
 
-  final List<PortInfo> ports;
+  final List<SerialInfo> ports;
   final String? selectedPort;
   final bool isConnected;
   final bool isBusy;
@@ -88,53 +88,57 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
     );
     final canConnect =
         !widget.isBusy &&
-            !widget.isSending &&
-            !widget.isRefreshing &&
-            widget.selectedPort != null;
+        !widget.isSending &&
+        !widget.isRefreshing &&
+        widget.selectedPort != null;
     return Row(
       children: [
-        Expanded(flex: 4,
-            child: DropdownButtonFormField<String>(
-                key: ValueKey('port-${widget.selectedPort}'),
-                initialValue: widget.selectedPort,
-                isExpanded: true,
-                style: const TextStyle(fontSize: 14),
-                decoration: _controlDecoration('Port'),
-                hint: Text(
-                  widget.isRefreshing ? 'Portlar taranıyor…' : 'Port bulunamadı',
-                  maxLines: 1,
+        Expanded(
+          flex: 4,
+          child: DropdownButtonFormField<String>(
+            key: ValueKey('port-${widget.selectedPort}'),
+            initialValue: widget.selectedPort,
+            isExpanded: true,
+            style: const TextStyle(fontSize: 14),
+            decoration: _controlDecoration('Port'),
+            hint: Text(
+              widget.isRefreshing ? 'Portlar taranıyor…' : 'Port bulunamadı',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            items: [
+              ...widget.ports.map((port) {
+                return DropdownMenuItem(
+                  value: port.path,
+                  child: Text(
+                    port.name.isEmpty || port.name == port.path
+                        ? port.path
+                        : '${port.path} — ${port.name}',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                );
+              }),
+              DropdownMenuItem(
+                value: "refresh",
+                child: Text(
+                  "Refresh",
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                items: [
-                  ...widget.ports.map((port) {
-                    return DropdownMenuItem(
-                      value: port.name,
-                      child: Text(
-                        port.label,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    );
-                  },),
-                  DropdownMenuItem(
-                    value: "refresh",
-                    child: Text(
-                      "Refresh",
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  )
-                ],
-                onChanged: locked || widget.isRefreshing
-                    ? null
-                    : (value){
-                  if(value == "refresh"){
-                    widget.onRefresh();
-                    return;
-                  }
-                  widget.onPortChanged(value);
-                }
-            )),
+              ),
+            ],
+            onChanged: locked || widget.isRefreshing
+                ? null
+                : (value) {
+                    if (value == "refresh") {
+                      widget.onRefresh();
+                      return;
+                    }
+                    widget.onPortChanged(value);
+                  },
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(flex: 3, child: baud),
         const SizedBox(width: 8),
@@ -143,17 +147,19 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
           style: FilledButton.styleFrom(
             minimumSize: const Size(48, 48),
             padding: EdgeInsets.symmetric(horizontal: iconOnly ? 12 : 16),
-            backgroundColor: widget.isConnected ? const Color(0xFF3D2C27) : null,
+            backgroundColor: widget.isConnected
+                ? const Color(0xFF3D2C27)
+                : null,
             foregroundColor: widget.isConnected ? _txColor : null,
           ),
-          onPressed:  canConnect
+          onPressed: canConnect
               ? () {
-            if (widget.isConnected) {
-              widget.onDisconnect();
-            } else {
-              widget.onConnect(int.tryParse(_baud.text) ?? 0);
-            }
-          }
+                  if (widget.isConnected) {
+                    widget.onDisconnect();
+                  } else {
+                    widget.onConnect(int.tryParse(_baud.text) ?? 0);
+                  }
+                }
               : null,
           icon: Icon(
             widget.isConnected ? Icons.link_off : Icons.power_settings_new,

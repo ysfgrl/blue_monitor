@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'src/home_screen.dart';
-import 'src/serial_service.dart';
 
 void main() => runApp(const SerialMonitorApp());
 
 class SerialMonitorApp extends StatelessWidget {
-  const SerialMonitorApp({super.key, this.service});
-
-  final SerialService? service;
+  const SerialMonitorApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +40,7 @@ class SerialMonitorApp extends StatelessWidget {
         ),
         dividerColor: const Color(0xFF283343),
       ),
-      home: HomeScreen(service: service),
+      home: const HomeScreen(),
     );
   }
 }
