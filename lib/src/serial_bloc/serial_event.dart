@@ -9,6 +9,16 @@ final class SerialPortsRefreshRequested extends SerialEvent {
   const SerialPortsRefreshRequested();
 }
 
+final class _SerialPortAccessStarted extends SerialEvent {
+  const _SerialPortAccessStarted();
+}
+
+final class _SerialPortAccessCompleted extends SerialEvent {
+  const _SerialPortAccessCompleted({this.port, this.error});
+  final SerialInfo? port;
+  final Object? error;
+}
+
 final class SerialPortSelected extends SerialEvent {
   const SerialPortSelected(this.path);
   final String? path;

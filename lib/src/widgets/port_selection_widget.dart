@@ -13,6 +13,7 @@ class PortSelectionWidget extends StatefulWidget {
     required this.onRefresh,
     required this.onConnect,
     required this.onDisconnect,
+    this.onRequestPort,
   });
 
   final List<SerialInfo> ports;
@@ -25,67 +26,18 @@ class PortSelectionWidget extends StatefulWidget {
   final Future<void> Function() onRefresh;
   final Future<void> Function(int baudRate) onConnect;
   final Future<void> Function() onDisconnect;
+  final VoidCallback? onRequestPort;
 
   @override
   State<PortSelectionWidget> createState() => _PortSelectionWidgetState();
 }
 
 class _PortSelectionWidgetState extends State<PortSelectionWidget> {
-  final _baud = TextEditingController(text: '115200');
-  final _baudFocus = FocusNode();
-
-  @override
-  void dispose() {
-    _baud.dispose();
-    _baudFocus.dispose();
-    super.dispose();
-  }
+  int _baudRate = 115200;
 
   @override
   Widget build(BuildContext context) {
     final locked = widget.isConnected || widget.isBusy;
-    final iconOnly = true;
-    final label = "";
-    final baud = Tooltip(
-      message: '8N1 · Akış kontrolü kapalı',
-      child: SizedBox(
-        height: 48,
-        child: TextField(
-          key: const Key('baud-input'),
-          controller: _baud,
-          focusNode: _baudFocus,
-          enabled: !locked,
-          style: const TextStyle(fontSize: 14),
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          decoration: _controlDecoration('Baud').copyWith(
-            suffixIcon: PopupMenuButton<int>(
-              tooltip: 'Yaygın baud hızları',
-              enabled: !locked,
-              icon: const Icon(Icons.expand_more, size: 20),
-              onSelected: (value) => _baud.text = '$value',
-              itemBuilder: (_) => [
-                for (final rate in [
-                  1200,
-                  2400,
-                  4800,
-                  9600,
-                  19200,
-                  38400,
-                  57600,
-                  115200,
-                  230400,
-                  460800,
-                  921600,
-                  1500000,
-                ])
-                  PopupMenuItem(value: rate, child: Text('$rate')),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
     final canConnect =
         !widget.isBusy &&
         !widget.isSending &&
@@ -99,10 +51,24 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
             key: ValueKey('port-${widget.selectedPort}'),
             initialValue: widget.selectedPort,
             isExpanded: true,
-            style: const TextStyle(fontSize: 14),
-            decoration: _controlDecoration('Port'),
+            decoration: _controlDecoration('Port').copyWith(
+              suffixIcon: widget.onRequestPort == null
+                  ? null
+                  : IconButton(
+                      key: const Key('request-port-button'),
+                      tooltip: 'Port seç ve izin ver',
+                      onPressed: locked || widget.isRefreshing
+                          ? null
+                          : widget.onRequestPort,
+                      icon: const Icon(Icons.add, size: 20),
+                    ),
+            ),
             hint: Text(
-              widget.isRefreshing ? 'Portlar taranıyor…' : 'Port bulunamadı',
+              widget.isRefreshing
+                  ? 'Portlar taranıyor…'
+                  : widget.onRequestPort != null
+                  ? 'Port seçin (+)'
+                  : 'Port bulunamadı',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -111,9 +77,9 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
                 return DropdownMenuItem(
                   value: port.path,
                   child: Text(
-                    port.name.isEmpty || port.name == port.path
-                        ? port.path
-                        : '${port.path} — ${port.name}',
+                    widget.onRequestPort != null && port.name.isNotEmpty
+                        ? port.name
+                        : port.path,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -140,16 +106,54 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
           ),
         ),
         const SizedBox(width: 8),
-        Expanded(flex: 3, child: baud),
+        Expanded(
+          flex: 3,
+          child: DropdownButtonFormField<int>(
+            key: const Key('baud-dropdown'),
+            initialValue: _baudRate,
+            isExpanded: true,
+            menuMaxHeight: 320,
+            decoration: _controlDecoration('Baud'),
+            items: [
+              for (final rate in [
+                1200,
+                2400,
+                4800,
+                9600,
+                19200,
+                38400,
+                57600,
+                115200,
+                230400,
+                460800,
+                921600,
+                1500000,
+              ])
+                DropdownMenuItem(
+                  value: rate,
+                  child: Text(
+                    '$rate',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+            onChanged: locked
+                ? null
+                : (value) {
+                    if (value != null) setState(() => _baudRate = value);
+                  },
+          ),
+        ),
         const SizedBox(width: 8),
-        FilledButton.icon(
+        IconButton(
           key: const Key('connect-button'),
-          style: FilledButton.styleFrom(
+          tooltip: widget.isConnected ? 'Bağlantıyı kes' : 'Bağlan',
+          style: IconButton.styleFrom(
             minimumSize: const Size(48, 48),
-            padding: EdgeInsets.symmetric(horizontal: iconOnly ? 12 : 16),
             backgroundColor: widget.isConnected
                 ? const Color(0xFF3D2C27)
-                : null,
+                : const Color(0xFF347129),
             foregroundColor: widget.isConnected ? _txColor : null,
           ),
           onPressed: canConnect
@@ -157,7 +161,7 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
                   if (widget.isConnected) {
                     widget.onDisconnect();
                   } else {
-                    widget.onConnect(int.tryParse(_baud.text) ?? 0);
+                    widget.onConnect(_baudRate);
                   }
                 }
               : null,
@@ -165,7 +169,6 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
             widget.isConnected ? Icons.link_off : Icons.power_settings_new,
             size: 20,
           ),
-          label: Text(label),
         ),
       ],
     );

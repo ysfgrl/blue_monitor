@@ -54,7 +54,7 @@ class MonitorHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Serial Monitor',
+                        'Serial Terminal',
                         style: TextStyle(
                           fontSize: compact ? 20 : 25,
                           fontWeight: FontWeight.w700,

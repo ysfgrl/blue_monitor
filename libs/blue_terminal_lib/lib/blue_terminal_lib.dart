@@ -1,0 +1,9 @@
+export 'src/blue_terminal_lib.dart';
+export 'src/models/serial_config.dart';
+export 'src/models/serial_connection.dart';
+export 'src/models/serial_connection_state.dart';
+export 'src/models/serial_data.dart';
+export 'src/models/serial_flow_control.dart';
+export 'src/models/serial_info.dart';
+export 'src/models/serial_parity.dart';
+export 'src/models/serial_stop_bits.dart';

@@ -34,13 +34,14 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  blue_monitor_lib:
-    path: libs/blue_monitor_lib
+  blue_terminal_lib:
+    path: libs/blue_terminal_lib
   shared_preferences: ^2.5.6
   xterm: ^4.0.0
   flutter_localizations:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  flutter_pty: ^0.4.2
 
 dev_dependencies:
   flutter_test:
@@ -52,6 +53,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.12.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

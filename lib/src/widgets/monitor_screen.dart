@@ -3,24 +3,22 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:blue_monitor_lib/blue_monitor_lib.dart' show SerialInfo;
+import 'package:blue_terminal_lib/blue_terminal_lib.dart' show SerialInfo;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:xterm/xterm.dart' as xterm;
 
 import '../byte_codec.dart';
 import '../serial_bloc/serial_bloc.dart';
 import '../saved_commands.dart';
+import '../term/terminal_panel.dart';
 
 part 'header.dart';
 part 'command_list_dialog.dart';
 part 'port_selection_widget.dart';
 part 'save_command_dialog.dart';
 part 'send_data_widget.dart';
-part 'terminal_panel.dart';
-part 'terminal_key_bar.dart';
-part 'android_terminal_input.dart';
 part 'traffic_panel.dart';
 
 const _rxColor = Color(0xFF5EE0B5);
@@ -91,28 +89,26 @@ class _MonitorView extends StatelessWidget {
                                         : null,
                                   ),
                                   const SizedBox(height: 12),
-                                  _panel(
-                                    context,
-                                    padding: EdgeInsets.all(compact ? 10 : 12),
-                                    child: PortSelectionWidget(
-                                      ports: state.ports,
-                                      selectedPort: state.selectedPort,
-                                      isConnected: state.isConnected,
-                                      isBusy: state.isBusy,
-                                      isRefreshing: state.isRefreshing,
-                                      isSending: state.isSending,
-                                      onPortChanged: (path) =>
-                                          monitor.add(SerialPortSelected(path)),
-                                      onRefresh: () async => monitor.add(
-                                        const SerialPortsRefreshRequested(),
-                                      ),
-                                      onConnect: (baudRate) async =>
-                                          monitor.add(
-                                            SerialConnectionRequested(baudRate),
-                                          ),
-                                      onDisconnect: () async => monitor.add(
-                                        const SerialDisconnectionRequested(),
-                                      ),
+                                  PortSelectionWidget(
+                                    ports: state.ports,
+                                    selectedPort: state.selectedPort,
+                                    isConnected: state.isConnected,
+                                    isBusy: state.isBusy,
+                                    isRefreshing: state.isRefreshing,
+                                    isSending: state.isSending,
+                                    onPortChanged: (path) =>
+                                        monitor.add(SerialPortSelected(path)),
+                                    onRefresh: () async => monitor.add(
+                                      const SerialPortsRefreshRequested(),
+                                    ),
+                                    onRequestPort: kIsWeb
+                                        ? monitor.requestPort
+                                        : null,
+                                    onConnect: (baudRate) async => monitor.add(
+                                      SerialConnectionRequested(baudRate),
+                                    ),
+                                    onDisconnect: () async => monitor.add(
+                                      const SerialDisconnectionRequested(),
                                     ),
                                   ),
                                   if (state.error != null) ...[
@@ -164,6 +160,15 @@ class _MonitorView extends StatelessWidget {
                                             ),
                                           ),
                                           TerminalPanel(
+                                            incoming: monitor.incomingBytes,
+                                            isConnected: state.isConnected,
+                                            onOutput: (bytes) {
+                                              if (!monitor.isClosed) {
+                                                monitor.add(
+                                                  SerialSendRequested(bytes),
+                                                );
+                                              }
+                                            },
                                             active:
                                                 state.type ==
                                                 MonitorType.terminal,

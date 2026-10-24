@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Serial Terminal
+Comment=Local and serial terminal
+Exec=serial_monitor
+Icon=com.ysfgrl.serial_monitor.serial_monitor
+Terminal=false
+Categories=Development;Utility;
+StartupNotify=true
+StartupWMClass=com.ysfgrl.serial_monitor.serial_monitor

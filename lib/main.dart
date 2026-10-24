@@ -16,7 +16,7 @@ class SerialMonitorApp extends StatelessWidget {
       surface: const Color(0xFF131C28),
     );
     return MaterialApp(
-      title: 'Serial Monitor',
+      title: 'Serial Terminal',
       debugShowCheckedModeBanner: false,
       locale: const Locale('tr'),
       supportedLocales: const [Locale('tr')],

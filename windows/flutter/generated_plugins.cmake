@@ -3,10 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  blue_monitor_lib
+  blue_terminal_lib
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
+  flutter_pty
   jni
 )
 

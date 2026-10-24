@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'local/local_terminal.dart';
 import 'widgets/monitor_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -25,6 +26,18 @@ class HomeScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 24),
+                  FilledButton.icon(
+                    key: const Key('local-terminal'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 56),
+                    ),
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute(builder: (_) => const LocalTerminal()),
+                    ),
+                    icon: const Icon(Icons.terminal_rounded),
+                    label: const Text('Local terminal'),
+                  ),
+                  const SizedBox(height: 12),
                   FilledButton.icon(
                     key: const Key('serial-terminal'),
                     style: FilledButton.styleFrom(

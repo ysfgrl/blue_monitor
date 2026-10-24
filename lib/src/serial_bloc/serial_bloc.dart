@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:blue_monitor_lib/blue_monitor_lib.dart';
+import 'package:blue_terminal_lib/blue_terminal_lib.dart';
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +14,10 @@ part 'serial_state.dart';
 class SerialBloc extends Bloc<SerialEvent, SerialState> {
   SerialBloc() : super(const SerialState()) {
     on<SerialPortsRefreshRequested>(_onRefreshPorts);
+    on<_SerialPortAccessStarted>((event, emit) {
+      _emitState(emit, state.copyWith(isRefreshing: true, clearError: true));
+    });
+    on<_SerialPortAccessCompleted>(_onPortAccessCompleted);
     on<SerialPortSelected>(_onPortSelected);
     on<SerialTypeChanged>(_onTypeChanged);
     on<SerialConnectionRequested>(_onConnect);
@@ -67,7 +71,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
   static const maxHistoryBytes = 1024 * 1024;
   static const _maxRecordBytes = 4096;
 
-  final _serial = BlueMonitorLib();
+  final _serial = BlueTerminalLib();
   final _incomingBytes = StreamController<Uint8List>.broadcast(sync: true);
   final _pendingWrites = ListQueue<SerialSendRequested>();
   final _sendRequests = <SerialSendRequested>{};
@@ -82,9 +86,73 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
   Future<void>? _closeFuture;
   bool _portFailed = false;
   bool _closing = false;
+  bool _requestingPort = false;
 
   bool get _inactive => _closing || isClosed;
   Stream<Uint8List> get incomingBytes => _incomingBytes.stream;
+
+  /// Invoke directly from a button so the browser keeps user activation.
+  void requestPort() {
+    if (_inactive ||
+        _requestingPort ||
+        state.isRefreshing ||
+        state.isBusy ||
+        state.isConnected)
+      return;
+    _requestingPort = true;
+    add(const _SerialPortAccessStarted());
+    try {
+      // Invoke before yielding: the chooser requires a browser user gesture.
+      unawaited(
+        _serial.requestPort().then<void>(
+          (port) {
+            if (!_inactive) add(_SerialPortAccessCompleted(port: port));
+          },
+          onError: (Object error, StackTrace stack) {
+            if (!_inactive) add(_SerialPortAccessCompleted(error: error));
+          },
+        ),
+      );
+    } catch (error) {
+      if (!_inactive) add(_SerialPortAccessCompleted(error: error));
+    }
+  }
+
+  void _onPortAccessCompleted(
+    _SerialPortAccessCompleted event,
+    Emitter<SerialState> emit,
+  ) {
+    _requestingPort = false;
+    if (_inactive) return;
+    final port = event.port;
+    if (port != null) {
+      _emitState(
+        emit,
+        state.copyWith(
+          ports: [
+            for (final existing in state.ports)
+              if (existing.path != port.path) existing,
+            port,
+          ],
+          selectedPort: port.path,
+          isRefreshing: false,
+        ),
+      );
+    } else {
+      final error = event.error;
+      if (error is! PlatformException || error.code != 'request-cancelled') {
+        _emitState(
+          emit,
+          state.copyWith(
+            error: error == null ? null : _describeError(error),
+            isRefreshing: false,
+          ),
+        );
+      } else {
+        _emitState(emit, state.copyWith(isRefreshing: false));
+      }
+    }
+  }
 
   @override
   void onEvent(SerialEvent event) {
@@ -136,7 +204,11 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     SerialPortsRefreshRequested event,
     Emitter<SerialState> emit,
   ) async {
-    if (_inactive || state.isRefreshing || state.isConnected || state.isBusy)
+    if (_inactive ||
+        _requestingPort ||
+        state.isRefreshing ||
+        state.isConnected ||
+        state.isBusy)
       return;
     _emitState(emit, state.copyWith(isRefreshing: true, clearError: true));
     try {
@@ -165,6 +237,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     Emitter<SerialState> emit,
   ) async {
     if (_inactive ||
+        _requestingPort ||
         state.isBusy ||
         state.isConnected ||
         state.isRefreshing ||
@@ -475,6 +548,12 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     if (error is StateError) return error.message.toString();
     if (error is PlatformException) {
       final message = error.message ?? error.code;
+      if (error.code == 'insecure-context') {
+        return 'Web seri port erişimi için uygulamayı HTTPS veya localhost üzerinden açın.';
+      }
+      if (error.code == 'unsupported-platform') {
+        return 'Bu tarayıcı Web Serial desteklemiyor. Masaüstü Chrome ile açın.';
+      }
       if (error.code == 'usb-permission-denied') {
         return 'USB erişim izni verilmedi. Yeniden bağlanıp Android izin penceresinde izin verin.';
       }

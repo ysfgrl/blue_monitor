@@ -6,9 +6,9 @@
 
 #include "generated_plugin_registrant.h"
 
-#include <blue_monitor_lib/blue_monitor_lib_plugin_c_api.h>
+#include <blue_terminal_lib/blue_terminal_lib_plugin_c_api.h>
 
 void RegisterPlugins(flutter::PluginRegistry* registry) {
-  BlueMonitorLibPluginCApiRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("BlueMonitorLibPluginCApi"));
+  BlueTerminalLibPluginCApiRegisterWithRegistrar(
+      registry->GetRegistrarForPlugin("BlueTerminalLibPluginCApi"));
 }
