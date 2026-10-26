@@ -4,7 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../bloc/ssh_bloc/ssh_bloc.dart';
+import '../bloc/ssh/connection/ssh_connection_bloc.dart';
 
 class SshHostKeyListener extends StatefulWidget {
   const SshHostKeyListener({
@@ -57,7 +57,7 @@ class _SshHostKeyListenerState extends State<SshHostKeyListener> {
   }
 
   void _sync() {
-    final bloc = context.read<SshBloc>();
+    final bloc = context.read<SshConnectionBloc>();
     final challenge = bloc.state.hostKeyChallenge;
     if (!widget.active || challenge == null) {
       _dismiss();
@@ -67,7 +67,10 @@ class _SshHostKeyListenerState extends State<SshHostKeyListener> {
     if (_route == null) unawaited(_show(bloc, challenge));
   }
 
-  Future<void> _show(SshBloc bloc, SshHostKeyChallenge challenge) async {
+  Future<void> _show(
+    SshConnectionBloc bloc,
+    SshHostKeyChallenge challenge,
+  ) async {
     final route = DialogRoute<bool>(
       context: context,
       barrierDismissible: false,
@@ -135,10 +138,11 @@ class _SshHostKeyListenerState extends State<SshHostKeyListener> {
   }
 
   @override
-  Widget build(BuildContext context) => BlocListener<SshBloc, SshState>(
-    listenWhen: (previous, current) =>
-        previous.hostKeyChallenge != current.hostKeyChallenge,
-    listener: (_, state) => _scheduleSync(),
-    child: widget.child,
-  );
+  Widget build(BuildContext context) =>
+      BlocListener<SshConnectionBloc, SshConnectionState>(
+        listenWhen: (previous, current) =>
+            previous.hostKeyChallenge != current.hostKeyChallenge,
+        listener: (_, state) => _scheduleSync(),
+        child: widget.child,
+      );
 }

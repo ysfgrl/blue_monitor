@@ -1,49 +1,119 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../bloc/ssh_bloc/ssh_bloc.dart';
+import '../bloc/env_bloc/env_bloc.dart';
+import '../bloc/ssh/ssh_list_bloc.dart';
+import '../bloc/ssh/connection/session/ssh_session_bloc.dart';
+import '../bloc/ssh/connection/ssh_connection_bloc.dart';
 import '../models/ssh_connection.dart';
+import '../store/ssh.dart';
 import 'ssh_connection_dialog.dart';
-import 'ssh_host_key_listener.dart';
 import 'ssh_session_tab.dart';
 
-class SshTerminal extends StatefulWidget {
+class SshTerminal extends StatelessWidget {
   const SshTerminal({super.key});
 
   @override
-  State<SshTerminal> createState() => _SshTerminalState();
+  Widget build(BuildContext context) => BlocBuilder<EnvBloc, EnvState>(
+    builder: (context, state) {
+      final selected = state.selected;
+      if (selected == null) {
+        return Scaffold(
+          appBar: AppBar(
+            leading: BackButton(onPressed: () => context.go('/')),
+            title: Text(context.tr('ssh.title')),
+          ),
+          body: Center(
+            child:
+                state.status == EnvStatus.init ||
+                    state.status == EnvStatus.loading
+                ? const CircularProgressIndicator()
+                : FilledButton.icon(
+                    onPressed: () => context.go('/'),
+                    icon: const Icon(Icons.layers_outlined),
+                    label: Text(context.tr('setting.selectEnvironment')),
+                  ),
+          ),
+        );
+      }
+      return BlocProvider<SshListBloc>(
+        key: ValueKey(selected.id),
+        lazy: false,
+        create: (context) {
+          final bloc = SshListBloc(
+            store: SshConnectionStore(envId: selected.id),
+          );
+          // if (!kIsWeb) bloc.add(const SshConnectionsRequested());
+          return bloc;
+        },
+        child: const _SshTerminalView(),
+      );
+    },
+  );
 }
 
-class _SshTerminalTab {
-  const _SshTerminalTab({required this.id, required this.connection});
+class _SshTerminalView extends StatefulWidget {
+  const _SshTerminalView();
 
-  final int id;
-  final SshConnection connection;
+  @override
+  State<_SshTerminalView> createState() => _SshTerminalState();
 }
 
-class _SshTerminalState extends State<SshTerminal>
+class _SshTerminalState extends State<_SshTerminalView>
     with TickerProviderStateMixin {
-  final _sessions = <_SshTerminalTab>[];
   late TabController _tabs;
+  final _connectionSubscriptions =
+      <SshConnectionBloc, StreamSubscription<SshConnectionState>>{};
   int _selectedIndex = 0;
-  int _nextId = 1;
+  int _lastOpenedSessionId = 0;
+  SshSessionBloc? _selectedSession;
   bool _editingConnection = false;
   String? _seenMessage;
+  SshListBloc get _bloc => context.read<SshListBloc>();
 
-  SshBloc get _bloc => context.read<SshBloc>();
+  List<SshSessionBloc> get _sessions => [
+    for (final connection in _connectionSubscriptions.keys)
+      ...connection.state.sessions,
+  ]..sort((a, b) => a.id.compareTo(b.id));
+
+  void _watchConnections(SshListState state) {
+    final connections = {
+      for (final connection in state.connections)
+        _bloc.connectionBlocFor(connection),
+    };
+    for (final connection in _connectionSubscriptions.keys.toList()) {
+      if (!connections.contains(connection)) {
+        unawaited(_connectionSubscriptions.remove(connection)!.cancel());
+      }
+    }
+    for (final connection in connections) {
+      if (_connectionSubscriptions.containsKey(connection)) continue;
+      var previous = connection.state.sessions;
+      _connectionSubscriptions[connection] = connection.stream.listen((state) {
+        if (!mounted || identical(previous, state.sessions)) return;
+        previous = state.sessions;
+        _syncSessions(_sessions);
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _createController();
+    _watchConnections(_bloc.state);
+    final sessions = _sessions;
+    _lastOpenedSessionId = sessions.isEmpty ? 0 : sessions.last.id;
+    _createController(sessions.length);
   }
 
-  void _createController() {
+  void _createController(int sessionCount) {
     _tabs = TabController(
-      length: _sessions.length + 1,
+      length: sessionCount + 1,
       initialIndex: _selectedIndex,
       vsync: this,
     )..addListener(_onTabChanged);
@@ -51,42 +121,22 @@ class _SshTerminalState extends State<SshTerminal>
 
   void _onTabChanged() {
     if (_selectedIndex != _tabs.index) {
-      setState(() => _selectedIndex = _tabs.index);
+      setState(() {
+        _selectedIndex = _tabs.index;
+        _selectedSession = _selectedIndex == 0
+            ? null
+            : _sessions[_selectedIndex - 1];
+      });
     }
   }
 
   void _openConnection(SshConnection connection) {
     FocusScope.of(context).unfocus();
-    setState(() {
-      _tabs.dispose();
-      _sessions.add(_SshTerminalTab(id: _nextId++, connection: connection));
-      _selectedIndex = _sessions.length;
-      _createController();
-    });
+    _bloc.add(SshSessionOpened(connection));
   }
 
-  void _closeConnection(int id) {
-    final index = _sessions.indexWhere((session) => session.id == id);
-    if (index < 0) return;
-    final selectedId = _selectedIndex == 0
-        ? null
-        : _sessions[_selectedIndex - 1].id;
-    setState(() {
-      _tabs.dispose();
-      _sessions.removeAt(index);
-      if (selectedId == null) {
-        _selectedIndex = 0;
-      } else {
-        final selected = _sessions.indexWhere(
-          (session) => session.id == selectedId,
-        );
-        _selectedIndex = selected >= 0
-            ? selected + 1
-            : _selectedIndex.clamp(0, _sessions.length);
-      }
-      _createController();
-    });
-  }
+  void _closeConnection(SshSessionBloc session) =>
+      _bloc.add(SshSessionClosed(session));
 
   void _showConnections() => _tabs.animateTo(0);
 
@@ -109,9 +159,37 @@ class _SshTerminalState extends State<SshTerminal>
     }
   }
 
-  void _stateChanged(BuildContext context, SshState state) {
-    if (state.profileMessage != _seenMessage) {
-      _seenMessage = state.profileMessage;
+  void _syncSessions(List<SshSessionBloc> sessions) {
+    final opening =
+        sessions.isNotEmpty && sessions.last.id > _lastOpenedSessionId;
+    if (opening) _lastOpenedSessionId = sessions.last.id;
+    final selected = _selectedSession == null
+        ? -1
+        : sessions.indexOf(_selectedSession!);
+    final nextIndex = opening
+        ? sessions.length
+        : _selectedSession == null
+        ? 0
+        : selected >= 0
+        ? selected + 1
+        : _selectedIndex.clamp(0, sessions.length);
+    setState(() {
+      _selectedIndex = nextIndex;
+      _selectedSession = nextIndex == 0 ? null : sessions[nextIndex - 1];
+      if (_tabs.length != sessions.length + 1) {
+        _tabs.dispose();
+        _createController(sessions.length);
+      } else if (_tabs.index != nextIndex) {
+        _tabs.index = nextIndex;
+      }
+    });
+  }
+
+  void _stateChanged(BuildContext context, SshListState state) {
+    _watchConnections(state);
+    _syncSessions(_sessions);
+    if (state.message != _seenMessage) {
+      _seenMessage = state.message;
       if (_seenMessage != null) {
         ScaffoldMessenger.of(
           context,
@@ -122,15 +200,19 @@ class _SshTerminalState extends State<SshTerminal>
 
   @override
   void dispose() {
+    for (final subscription in _connectionSubscriptions.values) {
+      unawaited(subscription.cancel());
+    }
     _tabs.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => SshHostKeyListener(
-    child: BlocConsumer<SshBloc, SshState>(
-      listener: _stateChanged,
-      builder: (context, state) => Scaffold(
+  Widget build(BuildContext context) => BlocConsumer<SshListBloc, SshListState>(
+    listener: _stateChanged,
+    builder: (context, state) {
+      final sessions = _sessions;
+      return Scaffold(
         appBar: AppBar(
           leading: BackButton(onPressed: () => context.go('/')),
           title: Text(context.tr('ssh.title')),
@@ -161,7 +243,7 @@ class _SshTerminalState extends State<SshTerminal>
                             key: ValueKey('ssh-connections-tab'),
                             text: context.tr('ssh.connections'),
                           ),
-                          for (final session in _sessions)
+                          for (final session in sessions)
                             Tab(
                               key: ValueKey('ssh-tab-${session.id}'),
                               child: Row(
@@ -185,8 +267,7 @@ class _SshTerminalState extends State<SshTerminal>
                                   const SizedBox(width: 4),
                                   IconButton(
                                     tooltip: context.tr('global.closeTab'),
-                                    onPressed: () =>
-                                        _closeConnection(session.id),
+                                    onPressed: () => _closeConnection(session),
                                     icon: const Icon(Icons.close, size: 16),
                                     constraints: const BoxConstraints.tightFor(
                                       width: 32,
@@ -216,18 +297,18 @@ class _SshTerminalState extends State<SshTerminal>
                               ),
                             ),
                           ),
-                          for (var index = 0; index < _sessions.length; index++)
+                          for (var index = 0; index < sessions.length; index++)
                             // Keep the direct Stack child keyed so other tabs
                             // retain their Bloc and single-subscription stream.
                             Offstage(
                               key: ValueKey(
-                                'ssh-session-${_sessions[index].id}',
+                                'ssh-session-${sessions[index].id}',
                               ),
                               offstage: _selectedIndex != index + 1,
                               child: TickerMode(
                                 enabled: _selectedIndex == index + 1,
                                 child: SshSessionTab(
-                                  connection: _sessions[index].connection,
+                                  bloc: sessions[index],
                                   active:
                                       _selectedIndex == index + 1 &&
                                       !_editingConnection,
@@ -241,19 +322,12 @@ class _SshTerminalState extends State<SshTerminal>
                   ],
                 ),
         ),
-      ),
-    ),
+      );
+    },
   );
 
-  Widget _statusText(SshState state) => Text(
-    state.message ?? '',
-    style: state.hasError
-        ? TextStyle(color: Theme.of(context).colorScheme.error)
-        : null,
-  );
-
-  Widget _buildConnections(SshState state) {
-    final enabled = !state.isConnecting && !state.profilesBusy;
+  Widget _buildConnections(SshListState state) {
+    final enabled = !state.isBusy;
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 640),
@@ -267,21 +341,21 @@ class _SshTerminalState extends State<SshTerminal>
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               const SizedBox(height: 16),
-              if (state.profilesBusy) const LinearProgressIndicator(),
-              if (state.profileError != null) ...[
+              if (state.isBusy) const LinearProgressIndicator(),
+              if (state.error != null) ...[
                 Text(
-                  state.profileError!,
+                  state.error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
                 TextButton(
-                  onPressed: state.profilesBusy
+                  onPressed: state.isBusy
                       ? null
                       : () => _bloc.add(const SshConnectionsRequested()),
                   child: Text(context.tr('ssh.reloadConnections')),
                 ),
               ],
               Expanded(
-                child: state.profilesReady && state.connections.isEmpty
+                child: state.isReady && state.connections.isEmpty
                     ? Center(child: Text(context.tr('ssh.noSavedConnections')))
                     : ListView.builder(
                         itemCount: state.connections.length,
@@ -335,18 +409,8 @@ class _SshTerminalState extends State<SshTerminal>
                         },
                       ),
               ),
-              if (state.isConnecting) ...[
-                const LinearProgressIndicator(),
-                TextButton(
-                  onPressed: () => _bloc.add(const SshDisconnectRequested()),
-                  child: Text(context.tr('global.cancelConnection')),
-                ),
-              ] else if (state.hasError) ...[
-                _statusText(state),
-                const SizedBox(height: 12),
-              ],
               FilledButton.icon(
-                onPressed: enabled && state.profilesReady
+                onPressed: enabled && state.isReady
                     ? () => _editConnection()
                     : null,
                 icon: const Icon(Icons.add_rounded),

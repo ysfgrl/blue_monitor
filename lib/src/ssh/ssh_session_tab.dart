@@ -2,32 +2,34 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../bloc/ssh_bloc/ssh_bloc.dart';
-import '../models/ssh_connection.dart';
+import '../bloc/ssh/connection/ssh_connection_bloc.dart';
+import '../bloc/ssh/connection/session/ssh_session_bloc.dart';
 import '../term/terminal_panel.dart';
 import 'ssh_host_key_listener.dart';
 
 class SshSessionTab extends StatelessWidget {
   const SshSessionTab({
     super.key,
-    required this.connection,
+    required this.bloc,
     required this.active,
     required this.onShowConnections,
   });
 
-  final SshConnection connection;
+  final SshSessionBloc bloc;
   final bool active;
   final VoidCallback onShowConnections;
 
   @override
-  Widget build(BuildContext context) => BlocProvider<SshBloc>(
-    lazy: false,
-    create: (_) => SshBloc()..add(SshConnectRequested(connection)),
+  Widget build(BuildContext context) => MultiBlocProvider(
+    providers: [
+      BlocProvider<SshConnectionBloc>.value(value: bloc.connectionBloc),
+      BlocProvider<SshSessionBloc>.value(value: bloc),
+    ],
     child: SshHostKeyListener(
       active: active,
-      child: BlocBuilder<SshBloc, SshState>(
+      child: BlocBuilder<SshSessionBloc, SshSessionState>(
         builder: (context, state) {
-          final bloc = context.read<SshBloc>();
+          final bloc = context.read<SshSessionBloc>();
           final output = state.output;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -38,7 +40,7 @@ class SshSessionTab extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        connection.destination,
+                        bloc.connection.destination,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -48,7 +50,7 @@ class SshSessionTab extends StatelessWidget {
                             ? context.tr('global.cancelConnection')
                             : context.tr('global.disconnect'),
                         onPressed: () =>
-                            bloc.add(const SshDisconnectRequested()),
+                            bloc.add(const SshSessionDisconnectRequested()),
                         icon: const Icon(Icons.link_off_rounded),
                       ),
                   ],

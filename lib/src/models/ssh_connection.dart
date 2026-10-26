@@ -10,6 +10,7 @@ class SshConnection extends Equatable {
     required this.host,
     required this.port,
     required this.username,
+    required this.password,
   });
 
   final String id;
@@ -17,9 +18,13 @@ class SshConnection extends Equatable {
   final String host;
   final int port;
   final String username;
+  final String password;
 
   @override
-  List<Object?> get props => [id, name, host, port, username];
+  List<Object?> get props => [id, name, host, port, username, password];
+
+  @override
+  bool get stringify => false;
 
   String get destination => '$username@$host:$port';
 
@@ -51,6 +56,7 @@ class SshConnection extends Equatable {
     'host': host,
     'port': port,
     'username': username,
+    'password': password,
   };
 
   factory SshConnection.fromJson(Map<String, dynamic> json) {
@@ -58,7 +64,8 @@ class SshConnection extends Equatable {
         json['name'] is! String ||
         json['host'] is! String ||
         json['port'] is! int ||
-        json['username'] is! String) {
+        json['username'] is! String ||
+        json['password'] is! String) {
       throw const FormatException('ssh.invalidRecord');
     }
     final connection = SshConnection(
@@ -67,6 +74,7 @@ class SshConnection extends Equatable {
       host: json['host'] as String,
       port: json['port'] as int,
       username: json['username'] as String,
+      password: json['password'] as String,
     );
     connection.validate();
     return connection;

@@ -1,13 +1,12 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'src/bloc/local_bloc/local_bloc.dart';
 import 'src/bloc/env_bloc/env_bloc.dart';
 import 'src/bloc/serial_bloc/serial_bloc.dart';
-import 'src/bloc/ssh_bloc/ssh_bloc.dart';
 import 'src/router.dart';
+
 class _TranslationAssetLoader extends RootBundleAssetLoader {
   const _TranslationAssetLoader();
 
@@ -15,6 +14,7 @@ class _TranslationAssetLoader extends RootBundleAssetLoader {
   String getLocalePath(String basePath, Locale locale) =>
       '$basePath/$locale.json';
 }
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await EasyLocalization.ensureInitialized();
@@ -33,14 +33,6 @@ Future<void> main() async {
             create: (_) => EnvBloc()..add(const EnvReadList()),
           ),
           BlocProvider<LocalBloc>(create: (_) => LocalBloc()),
-          BlocProvider<SshBloc>(
-            lazy: false,
-            create: (_) {
-              final bloc = SshBloc();
-              if (!kIsWeb) bloc.add(const SshConnectionsRequested());
-              return bloc;
-            },
-          ),
           BlocProvider<SerialBloc>(
             lazy: false,
             create: (_) =>
