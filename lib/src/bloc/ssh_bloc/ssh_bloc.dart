@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dartssh2/dartssh2.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,9 +15,7 @@ part 'ssh_event.dart';
 part 'ssh_state.dart';
 
 class SshBloc extends Bloc<SshEvent, SshState> {
-  SshBloc({SshConnectionStore? store})
-    : _store = store ?? SshConnectionStore(),
-      super(const SshState()) {
+  SshBloc() : super(const SshState()) {
     on<SshStorageEvent>(
       _onStorage,
       transformer: (events, mapper) => events.asyncExpand(mapper),
@@ -29,7 +28,7 @@ class SshBloc extends Bloc<SshEvent, SshState> {
     on<_SshEnded>(_onEnded);
   }
 
-  final SshConnectionStore _store;
+  final SshConnectionStore _store = SshConnectionStore();
   SSHSocket? _socket;
   SSHClient? _client;
   SSHSession? _session;
@@ -52,13 +51,16 @@ class SshBloc extends Bloc<SshEvent, SshState> {
     emit(
       state.copyWith(
         status: SshStatus.closed,
-        message: 'SSH bağlantısı kapatıldı.',
+        message: 'ssh.connectionClosed'.tr(),
         clearHostKeyChallenge: true,
       ),
     );
   }
 
-  void _onNewConnection(SshNewConnectionRequested event, Emitter<SshState> emit,) {
+  void _onNewConnection(
+    SshNewConnectionRequested event,
+    Emitter<SshState> emit,
+  ) {
     if (_inactive) return;
     _stopTransport();
     emit(
@@ -118,10 +120,10 @@ class SshBloc extends Bloc<SshEvent, SshState> {
         case SshConnectionSaved():
           connections = await _store.save(event.connection, event.password);
           saved = event.connection;
-          message = 'SSH bağlantısı kaydedildi.';
+          message = 'ssh.connectionSaved'.tr();
         case SshConnectionDeleted():
           connections = await _store.delete(event.id);
-          message = 'SSH bağlantısı silindi.';
+          message = 'ssh.connectionDeleted'.tr();
       }
       if (_inactive || emit.isDone) return;
       emit(
@@ -137,8 +139,8 @@ class SshBloc extends Bloc<SshEvent, SshState> {
       emit(
         state.copyWith(
           profileError: error is StateError
-              ? error.message.toString()
-              : 'SSH kayıtları işlenemedi. Güvenli depolamayı kontrol edip yeniden deneyin.',
+              ? _describeError(error)
+              : 'ssh.storageFailed'.tr(),
         ),
       );
     } finally {
@@ -148,15 +150,18 @@ class SshBloc extends Bloc<SshEvent, SshState> {
     }
   }
 
-  Future<bool> _verifyHostKey(int generation, SshConnection connection, String type, Uint8List fingerprint,) async {
+  Future<bool> _verifyHostKey(
+    int generation,
+    SshConnection connection,
+    String type,
+    Uint8List fingerprint,
+  ) async {
     final value = utf8.decode(fingerprint);
     final known = await _store.readHostKey(connection.host, connection.port);
     if (!_current(generation)) return false;
     if (known != null) {
       if (known == value) return true;
-      _verificationError =
-          'Sunucunun SSH anahtarı değişmiş. '
-          'Sunucu yöneticisiyle parmak izini doğrulayın.';
+      _verificationError = 'ssh.hostKeyChanged'.tr();
       return false;
     }
     final decision = Completer<bool>();
@@ -176,14 +181,17 @@ class SshBloc extends Bloc<SshEvent, SshState> {
     final trusted = await decision.future;
     if (!_current(generation)) return false;
     if (!trusted) {
-      _verificationError = 'SSH sunucusunun anahtarı onaylanmadı.';
+      _verificationError = 'ssh.hostKeyRejected'.tr();
       return false;
     }
     await _store.trustHostKey(connection.host, connection.port, value);
     return _current(generation);
   }
 
-  Future<void> _onConnect(SshConnectRequested event, Emitter<SshState> emit,) async {
+  Future<void> _onConnect(
+    SshConnectRequested event,
+    Emitter<SshState> emit,
+  ) async {
     if (_inactive || state.isConnecting || state.isConnected) return;
     final connection = event.connection;
     final generation = ++_generation;
@@ -230,7 +238,7 @@ class SshBloc extends Bloc<SshEvent, SshState> {
         emit(
           state.copyWith(
             status: SshStatus.tested,
-            message: 'Bağlantı başarılı. SSH kimlik doğrulaması tamamlandı.',
+            message: 'ssh.testSucceeded'.tr(),
             clearHostKeyChallenge: true,
           ),
         );
@@ -292,7 +300,7 @@ class SshBloc extends Bloc<SshEvent, SshState> {
   Future<void> _observeClient(int generation, SSHClient client) async {
     try {
       await client.done;
-      if (_session == null) _queueEnd(generation, 'SSH bağlantısı kapandı.');
+      if (_session == null) _queueEnd(generation, 'ssh.connectionEnded'.tr());
     } catch (error) {
       _queueEnd(
         generation,
@@ -302,7 +310,11 @@ class SshBloc extends Bloc<SshEvent, SshState> {
     }
   }
 
-  Future<void> _observeSession(int generation, SSHSession session, Future<void> outputDone,) async {
+  Future<void> _observeSession(
+    int generation,
+    SSHSession session,
+    Future<void> outputDone,
+  ) async {
     try {
       await session.done;
       await outputDone;
@@ -310,8 +322,8 @@ class SshBloc extends Bloc<SshEvent, SshState> {
       _queueEnd(
         generation,
         code == null
-            ? 'SSH oturumu kapandı.'
-            : 'SSH oturumu kapandı. Çıkış kodu: $code',
+            ? 'ssh.sessionEnded'.tr()
+            : 'ssh.sessionExited'.tr(namedArgs: {'code': code.toString()}),
       );
     } catch (error) {
       _queueEnd(generation, _describeError(error), isError: true);
@@ -319,19 +331,23 @@ class SshBloc extends Bloc<SshEvent, SshState> {
   }
 
   void _queueEnd(int generation, String message, {bool isError = false}) {
-    if (_current(generation))
+    if (_current(generation)) {
       add(_SshEnded(generation, message, isError: isError));
+    }
   }
 
   String _describeError(Object error) {
-    if (error is StateError) return error.message.toString();
-    if (error is FormatException) return error.message;
-    if (error is TimeoutException)
-      return 'SSH bağlantısı zaman aşımına uğradı.';
-    if (error is SSHAuthFailError) {
-      return 'Kimlik doğrulanamadı. Kullanıcı adını ve şifreyi kontrol edin.';
+    if (error is StateError) {
+      return error.message.trExists() ? error.message.tr() : error.message;
     }
-    return 'SSH bağlantı hatası: $error';
+    if (error is FormatException) {
+      return error.message.trExists() ? error.message.tr() : error.message;
+    }
+    if (error is TimeoutException) return 'ssh.connectionTimedOut'.tr();
+    if (error is SSHAuthFailError) {
+      return 'ssh.authenticationFailed'.tr();
+    }
+    return 'ssh.connectionError'.tr(namedArgs: {'error': error.toString()});
   }
 
   void send(Uint8List bytes) {

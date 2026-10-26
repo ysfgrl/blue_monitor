@@ -2,10 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-
 import '../models/serial_command.dart';
-
-
 
 class SavedCommandStore {
   static const _storageKey = 'serial_monitor.saved_commands.v1';
@@ -29,7 +26,7 @@ class SavedCommandStore {
 
   List<dynamic> _decodeList(String stored) {
     final json = jsonDecode(stored);
-    if (json is! List) throw const FormatException('Geçersiz komut listesi.');
+    if (json is! List) throw const FormatException('serial.invalidCommandList');
     return json;
   }
 

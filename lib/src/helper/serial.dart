@@ -1,30 +1,24 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import '../models/input_mode.dart';
+
 class SerialHelper {
   static Uint8List encodeInput(String text, InputMode mode) {
     if (text.isEmpty) {
-      throw const FormatException('Gönderilecek veri girin.');
+      throw const FormatException('serial.dataRequired');
     }
     if (mode == InputMode.ascii) {
       if (text.codeUnits.any((value) => value > 127)) {
-        throw const FormatException(
-          'ASCII yalnızca 0–127 aralığındaki karakterleri destekler. '
-              'Türkçe karakterler yerine HEX baytları kullanabilirsiniz.',
-        );
+        throw const FormatException('serial.asciiRangeError');
       }
       return Uint8List.fromList(ascii.encode(text));
     }
     final compact = text.replaceAll(RegExp(r'\s'), '');
     if (compact.isEmpty || !RegExp(r'^[0-9a-fA-F]+$').hasMatch(compact)) {
-      throw const FormatException(
-        'HEX için yalnızca 0–9, A–F ve boşluk kullanın. Örnek: 41 42 0D 0A',
-      );
+      throw const FormatException('serial.invalidHexCharacters');
     }
     if (compact.length.isOdd) {
-      throw const FormatException(
-        'Her HEX baytı iki haneli olmalı. Örnek: A yerine 0A.',
-      );
+      throw const FormatException('serial.invalidHexByte');
     }
     return Uint8List.fromList([
       for (var i = 0; i < compact.length; i += 2)
@@ -71,5 +65,4 @@ class SerialHelper {
     }
     return result.toString();
   }
-
 }

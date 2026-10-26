@@ -18,7 +18,20 @@ class TrafficRecord {
 
 @immutable
 class SerialState {
-  const SerialState({this.type = MonitorType.normal, this.status = ConnectionStatus.disconnected, this.ports = const [], this.records = const [], this.selectedPort, this.error, this.isRefreshing = false, this.isSending = false, this.historyBytes = 0, this.rxBytes = 0, this.txBytes = 0, this.droppedRecords = 0,});
+  const SerialState({
+    this.type = MonitorType.normal,
+    this.status = ConnectionStatus.disconnected,
+    this.ports = const [],
+    this.records = const [],
+    this.selectedPort,
+    this.error,
+    this.isRefreshing = false,
+    this.isSending = false,
+    this.historyBytes = 0,
+    this.rxBytes = 0,
+    this.txBytes = 0,
+    this.droppedRecords = 0,
+  });
 
   final MonitorType type;
   final ConnectionStatus status;
@@ -38,7 +51,22 @@ class SerialState {
       status == ConnectionStatus.connecting ||
       status == ConnectionStatus.disconnecting;
 
-  SerialState copyWith({MonitorType? type, ConnectionStatus? status, Iterable<SerialInfo>? ports, Iterable<TrafficRecord>? records, String? selectedPort, bool clearSelectedPort = false, String? error, bool clearError = false, bool? isRefreshing, bool? isSending, int? historyBytes, int? rxBytes, int? txBytes, int? droppedRecords,}) => SerialState(
+  SerialState copyWith({
+    MonitorType? type,
+    ConnectionStatus? status,
+    Iterable<SerialInfo>? ports,
+    Iterable<TrafficRecord>? records,
+    String? selectedPort,
+    bool clearSelectedPort = false,
+    String? error,
+    bool clearError = false,
+    bool? isRefreshing,
+    bool? isSending,
+    int? historyBytes,
+    int? rxBytes,
+    int? txBytes,
+    int? droppedRecords,
+  }) => SerialState(
     type: type ?? this.type,
     status: status ?? this.status,
     ports: ports == null ? this.ports : List<SerialInfo>.unmodifiable(ports),

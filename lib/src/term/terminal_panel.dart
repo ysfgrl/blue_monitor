@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:xterm/xterm.dart' as xterm;
@@ -36,13 +37,24 @@ const _ubuntuTerminalTheme = xterm.TerminalTheme(
 );
 
 class TerminalPanel extends StatefulWidget {
-  const TerminalPanel({super.key, required this.incoming, required this.onOutput, required this.isConnected, this.onResize, this.active = true,});
+  const TerminalPanel({
+    super.key,
+    required this.incoming,
+    required this.onOutput,
+    required this.isConnected,
+    this.onResize,
+    this.active = true,
+    this.allowBackgroundOutput = false,
+  });
 
   final Stream<Uint8List> incoming;
   final ValueChanged<Uint8List> onOutput;
   final bool isConnected;
   final void Function(int columns, int rows)? onResize;
   final bool active;
+
+  /// Allow terminal protocol replies from tabs without keyboard focus.
+  final bool allowBackgroundOutput;
 
   @override
   State<TerminalPanel> createState() => _TerminalPanelState();
@@ -103,7 +115,10 @@ class _TerminalPanelState extends State<TerminalPanel>
   }
 
   void _sendOutput(String output) {
-    if (!widget.active || !widget.isConnected || output.isEmpty) return;
+    if ((!widget.active && !widget.allowBackgroundOutput) ||
+        !widget.isConnected ||
+        output.isEmpty)
+      return;
     widget.onOutput(Uint8List.fromList(utf8.encode(output)));
   }
 
@@ -289,13 +304,25 @@ class _TerminalTextSink implements Sink<String> {
 
 /// Applies the mobile Ctrl key to user input without altering terminal replies.
 class _TerminalWithCtrl extends xterm.Terminal {
-  _TerminalWithCtrl({required this.isCtrlPressed, required this.onCtrlUsed, super.maxLines, super.platform, super.onOutput, super.onResize,});
+  _TerminalWithCtrl({
+    required this.isCtrlPressed,
+    required this.onCtrlUsed,
+    super.maxLines,
+    super.platform,
+    super.onOutput,
+    super.onResize,
+  });
 
   final bool Function() isCtrlPressed;
   final VoidCallback onCtrlUsed;
 
   @override
-  bool keyInput(xterm.TerminalKey key, { bool shift = false, bool alt = false, bool ctrl = false, }) {
+  bool keyInput(
+    xterm.TerminalKey key, {
+    bool shift = false,
+    bool alt = false,
+    bool ctrl = false,
+  }) {
     final virtualCtrl = isCtrlPressed();
     final modifier =
         key == xterm.TerminalKey.control ||

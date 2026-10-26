@@ -4,7 +4,13 @@ import 'dart:math';
 import 'package:equatable/equatable.dart';
 
 class SshConnection extends Equatable {
-  const SshConnection({required this.id, required this.name, required this.host, required this.port, required this.username,});
+  const SshConnection({
+    required this.id,
+    required this.name,
+    required this.host,
+    required this.port,
+    required this.username,
+  });
 
   final String id;
   final String name;
@@ -19,8 +25,8 @@ class SshConnection extends Equatable {
 
   bool sameEndpoint(SshConnection other) =>
       host.toLowerCase() == other.host.toLowerCase() &&
-          port == other.port &&
-          username == other.username;
+      port == other.port &&
+      username == other.username;
 
   static String newId() {
     final random = Random.secure();
@@ -35,7 +41,7 @@ class SshConnection extends Equatable {
         port < 1 ||
         port > 65535 ||
         username.trim().isEmpty) {
-      throw const FormatException('Geçersiz SSH bağlantı bilgileri.');
+      throw const FormatException('ssh.invalidConnection');
     }
   }
 
@@ -53,7 +59,7 @@ class SshConnection extends Equatable {
         json['host'] is! String ||
         json['port'] is! int ||
         json['username'] is! String) {
-      throw const FormatException('Geçersiz SSH bağlantı kaydı.');
+      throw const FormatException('ssh.invalidRecord');
     }
     final connection = SshConnection(
       id: json['id'] as String,

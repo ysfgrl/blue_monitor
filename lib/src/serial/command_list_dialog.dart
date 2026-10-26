@@ -1,7 +1,11 @@
 part of 'serial_terminal.dart';
 
 class _CommandListDialog extends StatefulWidget {
-  const _CommandListDialog({required this.commands, required this.store, required this.onChanged,});
+  const _CommandListDialog({
+    required this.commands,
+    required this.store,
+    required this.onChanged,
+  });
 
   final List<SerialCommand> commands;
   final SavedCommandStore store;
@@ -40,7 +44,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
           onSave: (edited) async {
             final updated = List<SerialCommand>.of(_commands);
             final index = updated.indexOf(command);
-            if (index < 0) throw StateError('Komut bulunamadı.');
+            if (index < 0) throw StateError('serial.commandNotFound');
             updated[index] = edited;
             await widget.store.save(updated);
             if (!mounted) return;
@@ -67,7 +71,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
       setState(() => _commands = updated);
       widget.onChanged(updated);
     } catch (_) {
-      if (mounted) setState(() => _error = 'Komut silinemedi. Tekrar deneyin.');
+      if (mounted) setState(() => _error = 'serial.commandDeleteFailed');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -78,7 +82,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
     return PopScope(
       canPop: !_busy,
       child: AlertDialog(
-        title: const Text('Kayıtlı komutlar'),
+        title: Text(context.tr('serial.savedCommands')),
         content: SizedBox(
           width: 520,
           height: min(440.0, MediaQuery.sizeOf(context).height * 0.55),
@@ -89,7 +93,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
-                    _error!,
+                    context.tr(_error!),
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -97,7 +101,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
                 ),
               Expanded(
                 child: _commands.isEmpty
-                    ? const Center(child: Text('Kayıtlı komut yok'))
+                    ? Center(child: Text(context.tr('serial.noSavedCommands')))
                     : ListView.separated(
                         key: const Key('command-management-list'),
                         itemCount: _commands.length,
@@ -113,7 +117,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
         actions: [
           TextButton(
             onPressed: _busy ? null : () => Navigator.of(context).pop(),
-            child: const Text('Kapat'),
+            child: Text(context.tr('global.close')),
           ),
         ],
       ),
@@ -122,12 +126,12 @@ class _CommandListDialogState extends State<_CommandListDialog> {
 
   Widget _commandRow(SerialCommand command) {
     final ending = command.cr && command.lf
-        ? 'CRLF'
+        ? context.tr('global.crlf')
         : command.cr
-        ? 'CR'
+        ? context.tr('global.cr')
         : command.lf
-        ? 'LF'
-        : 'Satır sonu yok';
+        ? context.tr('global.lf')
+        : context.tr('global.noLineEnding');
     return Row(
       key: ValueKey('managed-command-${command.name}'),
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,7 +148,17 @@ class _CommandListDialogState extends State<_CommandListDialog> {
               ),
               const SizedBox(height: 4),
               Text(
-                '${command.mode == InputMode.ascii ? 'ASCII' : 'HEX'} · $ending',
+                context.tr(
+                  'serial.commandSummary',
+                  namedArgs: {
+                    'mode': context.tr(
+                      command.mode == InputMode.ascii
+                          ? 'global.ascii'
+                          : 'global.hex',
+                    ),
+                    'ending': ending,
+                  },
+                ),
                 style: const TextStyle(color: _muted, fontSize: 12),
               ),
               const SizedBox(height: 4),
@@ -160,13 +174,13 @@ class _CommandListDialogState extends State<_CommandListDialog> {
         const SizedBox(width: 8),
         IconButton(
           key: ValueKey('edit-command-${command.name}'),
-          tooltip: 'Düzenle',
+          tooltip: context.tr('global.edit'),
           onPressed: _busy ? null : () => _editCommand(command),
           icon: const Icon(Icons.edit_outlined),
         ),
         IconButton(
           key: ValueKey('delete-command-${command.name}'),
-          tooltip: 'Sil',
+          tooltip: context.tr('global.delete'),
           onPressed: _busy ? null : () => _deleteCommand(command),
           icon: Icon(
             Icons.delete_outline_rounded,

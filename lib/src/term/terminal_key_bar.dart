@@ -1,7 +1,15 @@
 part of 'terminal_panel.dart';
 
 class _TerminalKeyBar extends StatelessWidget {
-  const _TerminalKeyBar({required this.enabled, required this.ctrlPressed, required this.keyboardOpen, required this.onKeyboardToggle, required this.onCtrlPressed, required this.onCtrlCPressed, required this.onKeyPressed,});
+  const _TerminalKeyBar({
+    required this.enabled,
+    required this.ctrlPressed,
+    required this.keyboardOpen,
+    required this.onKeyboardToggle,
+    required this.onCtrlPressed,
+    required this.onCtrlCPressed,
+    required this.onKeyPressed,
+  });
 
   final bool enabled;
   final bool ctrlPressed;
@@ -30,7 +38,9 @@ class _TerminalKeyBar extends StatelessWidget {
               padding: const EdgeInsets.only(left: 6),
               child: _button(
                 'keyboard',
-                keyboardOpen ? 'Klavyeyi kapat' : 'Klavyeyi aç',
+                keyboardOpen
+                    ? context.tr('terminal.hideKeyboard')
+                    : context.tr('terminal.showKeyboard'),
                 onKeyboardToggle,
                 icon: keyboardOpen
                     ? Icons.keyboard_hide_rounded
@@ -50,45 +60,81 @@ class _TerminalKeyBar extends StatelessWidget {
                     Semantics(
                       toggled: ctrlPressed,
                       child: _button(
-                        'Ctrl',
-                        'Ctrl: sonraki tuşla birlikte gönder',
+                        context.tr('terminal.ctrl'),
+                        context.tr('terminal.ctrlHint'),
                         onCtrlPressed,
                         selected: ctrlPressed,
                       ),
                     ),
-                    _button('Ctrl+C', 'Ctrl+C gönder', onCtrlCPressed),
-                    _key('Esc', 'Escape', xterm.TerminalKey.escape),
-                    _key('Tab', 'Tab', xterm.TerminalKey.tab),
-                    _key('Enter', 'Enter', xterm.TerminalKey.enter),
+                    _button(
+                      context.tr('terminal.ctrlC'),
+                      context.tr('terminal.sendCtrlC'),
+                      onCtrlCPressed,
+                    ),
+                    _key(
+                      context.tr('terminal.escape'),
+                      context.tr('terminal.escapeHint'),
+                      xterm.TerminalKey.escape,
+                    ),
+                    _key(
+                      context.tr('terminal.tab'),
+                      context.tr('terminal.tab'),
+                      xterm.TerminalKey.tab,
+                    ),
+                    _key(
+                      context.tr('terminal.enter'),
+                      context.tr('terminal.enter'),
+                      xterm.TerminalKey.enter,
+                    ),
                     _key(
                       'left',
-                      'Sol ok',
+                      context.tr('terminal.arrowLeft'),
                       xterm.TerminalKey.arrowLeft,
                       icon: Icons.arrow_back_rounded,
                     ),
                     _key(
                       'up',
-                      'Yukarı ok',
+                      context.tr('terminal.arrowUp'),
                       xterm.TerminalKey.arrowUp,
                       icon: Icons.arrow_upward_rounded,
                     ),
                     _key(
                       'down',
-                      'Aşağı ok',
+                      context.tr('terminal.arrowDown'),
                       xterm.TerminalKey.arrowDown,
                       icon: Icons.arrow_downward_rounded,
                     ),
                     _key(
                       'right',
-                      'Sağ ok',
+                      context.tr('terminal.arrowRight'),
                       xterm.TerminalKey.arrowRight,
                       icon: Icons.arrow_forward_rounded,
                     ),
-                    _key('Home', 'Satır başı', xterm.TerminalKey.home),
-                    _key('End', 'Satır sonu', xterm.TerminalKey.end),
-                    _key('PgUp', 'Önceki sayfa', xterm.TerminalKey.pageUp),
-                    _key('PgDn', 'Sonraki sayfa', xterm.TerminalKey.pageDown),
-                    _key('Del', 'Delete', xterm.TerminalKey.delete),
+                    _key(
+                      context.tr('terminal.home'),
+                      context.tr('terminal.startOfLine'),
+                      xterm.TerminalKey.home,
+                    ),
+                    _key(
+                      context.tr('terminal.end'),
+                      context.tr('terminal.endOfLine'),
+                      xterm.TerminalKey.end,
+                    ),
+                    _key(
+                      context.tr('terminal.pageUp'),
+                      context.tr('terminal.previousPage'),
+                      xterm.TerminalKey.pageUp,
+                    ),
+                    _key(
+                      context.tr('terminal.pageDown'),
+                      context.tr('terminal.nextPage'),
+                      xterm.TerminalKey.pageDown,
+                    ),
+                    _key(
+                      context.tr('terminal.delete'),
+                      context.tr('terminal.deleteHint'),
+                      xterm.TerminalKey.delete,
+                    ),
                   ],
                 ),
               ),
@@ -99,9 +145,20 @@ class _TerminalKeyBar extends StatelessWidget {
     );
   }
 
-  Widget _key(String label, String tooltip, xterm.TerminalKey key, { IconData? icon, }) => _button(label, tooltip, () => onKeyPressed(key), icon: icon);
+  Widget _key(
+    String label,
+    String tooltip,
+    xterm.TerminalKey key, {
+    IconData? icon,
+  }) => _button(label, tooltip, () => onKeyPressed(key), icon: icon);
 
-  Widget _button(String label, String tooltip, VoidCallback onPressed, { IconData? icon, bool selected = false, }) => Padding(
+  Widget _button(
+    String label,
+    String tooltip,
+    VoidCallback onPressed, {
+    IconData? icon,
+    bool selected = false,
+  }) => Padding(
     padding: const EdgeInsets.only(right: 4),
     child: Tooltip(
       message: tooltip,

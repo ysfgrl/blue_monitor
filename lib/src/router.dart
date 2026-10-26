@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'home_screen.dart';
 import 'local/local_terminal.dart';
 import 'serial/serial_terminal.dart';
+import 'setting/setting.dart';
 import 'ssh/ssh_terminal.dart';
 
 final appRouter = GoRouter(
@@ -60,6 +61,14 @@ final appRouter = GoRouter(
             GoRoute(
               path: '/ssh',
               builder: (context, state) => const SshTerminal(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/setting',
+              builder: (context, state) => const Setting(),
             ),
           ],
         ),

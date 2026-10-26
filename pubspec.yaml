@@ -24,6 +24,7 @@ dependencies:
   flutter_secure_storage: ^11.2.0
   equatable: ^2.1.0
   go_router: ^18.1.1
+  easy_localization: ^3.0.8
 
 dev_dependencies:
   flutter_test:
@@ -34,6 +35,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/translations/
     - assets/fonts/ubuntu_mono/LICENSE.txt
   fonts:
     - family: UbuntuMono

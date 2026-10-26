@@ -1,7 +1,11 @@
 part of 'serial_terminal.dart';
 
 class MonitorHeader extends StatelessWidget {
-  const MonitorHeader({super.key, required this.type, required this.onTypeChanged,});
+  const MonitorHeader({
+    super.key,
+    required this.type,
+    required this.onTypeChanged,
+  });
 
   final MonitorType type;
   final ValueChanged<MonitorType>? onTypeChanged;
@@ -43,7 +47,7 @@ class MonitorHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        'Serial Terminal',
+                        context.tr('global.appTitle'),
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -51,11 +55,8 @@ class MonitorHeader extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Linux · Seri port çalışma alanı',
-                        style: TextStyle(
-                          color: _muted,
-                          fontSize: 11,
-                        ),
+                        context.tr('serial.workspace'),
+                        style: TextStyle(color: _muted, fontSize: 11),
                       ),
                     ],
                   ),
@@ -67,14 +68,14 @@ class MonitorHeader extends StatelessWidget {
               child: SegmentedButton<MonitorType>(
                 key: const Key('monitor-type'),
                 expandedInsets: EdgeInsets.zero,
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: MonitorType.normal,
-                    label: Text('Normal'),
+                    label: Text(context.tr('global.normal')),
                   ),
                   ButtonSegment(
                     value: MonitorType.terminal,
-                    label: Text('Terminal'),
+                    label: Text(context.tr('global.terminal')),
                   ),
                 ],
                 selected: {type},

@@ -4,7 +4,13 @@ enum SshStatus { idle, connecting, testing, tested, connected, closed, failed }
 
 @immutable
 class SshHostKeyChallenge extends Equatable {
-  const SshHostKeyChallenge({required this.id, required this.host, required this.port, required this.type, required this.fingerprint,});
+  const SshHostKeyChallenge({
+    required this.id,
+    required this.host,
+    required this.port,
+    required this.type,
+    required this.fingerprint,
+  });
   final int id;
   final String host;
   final int port;
@@ -17,7 +23,19 @@ class SshHostKeyChallenge extends Equatable {
 
 @immutable
 class SshState extends Equatable {
-  const SshState({this.status = SshStatus.idle, this.connections = const [], this.profilesReady = false, this.profilesBusy = false, this.profileError, this.profileMessage, this.lastSavedConnection, this.activeConnection, this.output, this.message, this.hostKeyChallenge,});
+  const SshState({
+    this.status = SshStatus.idle,
+    this.connections = const [],
+    this.profilesReady = false,
+    this.profilesBusy = false,
+    this.profileError,
+    this.profileMessage,
+    this.lastSavedConnection,
+    this.activeConnection,
+    this.output,
+    this.message,
+    this.hostKeyChallenge,
+  });
 
   final SshStatus status;
   final List<SshConnection> connections;
@@ -51,7 +69,25 @@ class SshState extends Equatable {
     hostKeyChallenge,
   ];
 
-  SshState copyWith({SshStatus? status, List<SshConnection>? connections, bool? profilesReady, bool? profilesBusy, String? profileError, bool clearProfileError = false, String? profileMessage, bool clearProfileMessage = false, SshConnection? lastSavedConnection, bool clearLastSaved = false, SshConnection? activeConnection, Stream<Uint8List>? output, bool clearSession = false, String? message, bool clearMessage = false, SshHostKeyChallenge? hostKeyChallenge, bool clearHostKeyChallenge = false,}) => SshState(
+  SshState copyWith({
+    SshStatus? status,
+    List<SshConnection>? connections,
+    bool? profilesReady,
+    bool? profilesBusy,
+    String? profileError,
+    bool clearProfileError = false,
+    String? profileMessage,
+    bool clearProfileMessage = false,
+    SshConnection? lastSavedConnection,
+    bool clearLastSaved = false,
+    SshConnection? activeConnection,
+    Stream<Uint8List>? output,
+    bool clearSession = false,
+    String? message,
+    bool clearMessage = false,
+    SshHostKeyChallenge? hostKeyChallenge,
+    bool clearHostKeyChallenge = false,
+  }) => SshState(
     status: status ?? this.status,
     connections: connections ?? this.connections,
     profilesReady: profilesReady ?? this.profilesReady,

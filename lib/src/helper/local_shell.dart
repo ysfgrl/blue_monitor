@@ -7,7 +7,7 @@ import 'package:flutter_pty/flutter_pty.dart';
 class LocalShell {
   LocalShell({int rows = 24, int columns = 80}) {
     if (Platform.isIOS) {
-      throw UnsupportedError('iOS üzerinde yerel sistem kabuğu açılamıyor.');
+      throw UnsupportedError('local.iosShellUnsupported');
     }
     final environment = Map<String, String>.from(Platform.environment)
       ..['TERM'] = 'xterm-256color'

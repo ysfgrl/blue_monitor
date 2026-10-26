@@ -1,7 +1,12 @@
 part of 'serial_terminal.dart';
 
 class SendDataWidget extends StatefulWidget {
-  const SendDataWidget({super.key, required this.isConnected, required this.isSending, required this.onSend,});
+  const SendDataWidget({
+    super.key,
+    required this.isConnected,
+    required this.isSending,
+    required this.onSend,
+  });
 
   final bool isConnected;
   final bool isSending;
@@ -78,9 +83,9 @@ class _SendDataWidgetState extends State<SendDataWidget> {
       );
       if (!mounted || command == null) return;
       _selectCommand(command);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Komut kaydedildi.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('serial.commandSaved'))),
+      );
     } finally {
       if (mounted) setState(() => _commandDialogOpen = false);
     }
@@ -128,11 +133,11 @@ class _SendDataWidgetState extends State<SendDataWidget> {
       if (text.isNotEmpty) {
         final bytes = SerialHelper.encodeInput(text, _mode);
         if (mode == InputMode.ascii && bytes.any((byte) => byte > 127)) {
-          throw const FormatException(
-            'Veri ASCII dışında baytlar içeriyor. HEX olarak düzenleyebilirsiniz.',
-          );
+          throw const FormatException('serial.nonAsciiBytes');
         }
-        text = mode == InputMode.hex ? SerialHelper.formatHex(bytes) : ascii.decode(bytes);
+        text = mode == InputMode.hex
+            ? SerialHelper.formatHex(bytes)
+            : ascii.decode(bytes);
       }
       setState(() {
         _input.value = TextEditingValue(
@@ -181,7 +186,17 @@ class _SendDataWidgetState extends State<SendDataWidget> {
       ]);
     } on FormatException catch (error) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${command.name}: ${error.message}')),
+        SnackBar(
+          content: Text(
+            context.tr(
+              'serial.commandError',
+              namedArgs: {
+                'name': command.name,
+                'error': context.tr(error.message),
+              },
+            ),
+          ),
+        ),
       );
       return;
     }
@@ -222,9 +237,15 @@ class _SendDataWidgetState extends State<SendDataWidget> {
           runSpacing: 4,
           children: [
             SegmentedButton<InputMode>(
-              segments: const [
-                ButtonSegment(value: InputMode.ascii, label: Text('ASCII')),
-                ButtonSegment(value: InputMode.hex, label: Text('HEX')),
+              segments: [
+                ButtonSegment(
+                  value: InputMode.ascii,
+                  label: Text(context.tr('global.ascii')),
+                ),
+                ButtonSegment(
+                  value: InputMode.hex,
+                  label: Text(context.tr('global.hex')),
+                ),
               ],
               selected: {_mode},
               showSelectedIcon: false,
@@ -246,13 +267,13 @@ class _SendDataWidgetState extends State<SendDataWidget> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _endingCheckbox(
-                  'CR',
+                  context.tr('global.cr'),
                   _cr,
                   (value) => setState(() => _cr = value),
                 ),
                 const SizedBox(width: 4),
                 _endingCheckbox(
-                  'LF',
+                  context.tr('global.lf'),
                   _lf,
                   (value) => setState(() => _lf = value),
                 ),
@@ -263,14 +284,14 @@ class _SendDataWidgetState extends State<SendDataWidget> {
               children: [
                 IconButton(
                   key: const Key('add-command'),
-                  tooltip: 'Komut kaydet',
+                  tooltip: context.tr('serial.saveCommand'),
                   style: commandButtonStyle,
                   onPressed: _commandsLocked ? null : _addCommand,
                   icon: const Icon(Icons.add_rounded),
                 ),
                 IconButton(
                   key: const Key('manage-commands'),
-                  tooltip: 'Kayıtlı komutları yönet',
+                  tooltip: context.tr('serial.manageCommands'),
                   style: commandButtonStyle,
                   onPressed: _commandsLocked ? null : _showCommands,
                   icon: const Icon(Icons.list_alt_rounded),
@@ -299,7 +320,11 @@ class _SendDataWidgetState extends State<SendDataWidget> {
                   },
                   decoration:
                       _controlDecoration(
-                        _mode == InputMode.ascii ? 'ASCII' : 'HEX',
+                        context.tr(
+                          _mode == InputMode.ascii
+                              ? 'global.ascii'
+                              : 'global.hex',
+                        ),
                       ).copyWith(
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 10,
@@ -307,9 +332,11 @@ class _SendDataWidgetState extends State<SendDataWidget> {
                         ),
                         labelStyle: const TextStyle(fontSize: 12),
                         hintText: _mode == InputMode.ascii
-                            ? 'Metin girin…'
-                            : '41 42 0D 0A',
-                        errorText: _inputError,
+                            ? context.tr('global.enterText')
+                            : context.tr('serial.hexHint'),
+                        errorText: _inputError == null
+                            ? null
+                            : context.tr(_inputError!),
                         errorMaxLines: 4,
                       ),
                 ),
@@ -318,7 +345,7 @@ class _SendDataWidgetState extends State<SendDataWidget> {
             const SizedBox(width: 6),
             IconButton.filled(
               key: const Key('send-button'),
-              tooltip: 'Gönder',
+              tooltip: context.tr('global.send'),
               style: IconButton.styleFrom(
                 fixedSize: const Size.square(40),
                 minimumSize: Size.zero,
@@ -359,11 +386,11 @@ class _SendDataWidgetState extends State<SendDataWidget> {
                 key: const Key('retry-saved-commands'),
                 onPressed: _loadCommands,
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Komutlar yüklenemedi. Yeniden dene'),
+                label: Text(context.tr('serial.commandsLoadFailed')),
               )
             else if (_commands.isEmpty)
-              const Text(
-                'Kayıtlı komut yok',
+              Text(
+                context.tr('serial.noSavedCommands'),
                 style: TextStyle(color: _muted, fontSize: 11),
               )
             else
@@ -394,7 +421,11 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     );
   }
 
-  Widget _endingCheckbox(String label, bool value, ValueChanged<bool> onChanged,) => InkWell(
+  Widget _endingCheckbox(
+    String label,
+    bool value,
+    ValueChanged<bool> onChanged,
+  ) => InkWell(
     onTap: _isSending ? null : () => onChanged(!value),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -407,8 +438,8 @@ class _SendDataWidgetState extends State<SendDataWidget> {
           onChanged: _isSending
               ? null
               : (selected) {
-            if (selected != null) onChanged(selected);
-          },
+                  if (selected != null) onChanged(selected);
+                },
         ),
         Text(label, style: const TextStyle(fontSize: 11)),
       ],

@@ -12,7 +12,18 @@ class LocalStartEvt extends LocalEvent {
 }
 
 class LocalExitEvt extends LocalEvent {
-  const LocalExitEvt();
+  const LocalExitEvt({
+    required this.terminalId,
+    this.exitCode,
+    this.error,
+    this.closeTab = true,
+  });
+
+  final int terminalId;
+  final int? exitCode;
+  final String? error;
+  final bool closeTab;
+
   @override
-  List<Object?> get props => [];
+  List<Object?> get props => [terminalId, exitCode, error, closeTab];
 }

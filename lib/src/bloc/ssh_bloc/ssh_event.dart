@@ -38,7 +38,11 @@ class SshConnectionDeleted extends SshStorageEvent {
 }
 
 class SshConnectRequested extends SshEvent {
-  const SshConnectRequested(this.connection, { this.password, this.testOnly = false, });
+  const SshConnectRequested(
+    this.connection, {
+    this.password,
+    this.testOnly = false,
+  });
   final SshConnection connection;
   final String? password;
   final bool testOnly;

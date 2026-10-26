@@ -1,7 +1,16 @@
 part of 'serial_terminal.dart';
 
 class _SaveCommandDialog extends StatefulWidget {
-  const _SaveCommandDialog({required this.initialText, required this.mode, required this.cr, required this.lf, required this.existingNames, required this.onSave, this.initialName = '', this.isEditing = false,});
+  const _SaveCommandDialog({
+    required this.initialText,
+    required this.mode,
+    required this.cr,
+    required this.lf,
+    required this.existingNames,
+    required this.onSave,
+    this.initialName = '',
+    this.isEditing = false,
+  });
 
   final String initialText;
   final InputMode mode;
@@ -46,7 +55,7 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
       if (!mounted) return;
       setState(() {
         _saving = false;
-        _saveError = 'Komut kaydedilemedi. Tekrar deneyin.';
+        _saveError = 'serial.commandSaveFailed';
       });
     }
   }
@@ -61,16 +70,20 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
   @override
   Widget build(BuildContext context) {
     final ending = _cr && _lf
-        ? 'CRLF'
+        ? context.tr('global.crlf')
         : _cr
-        ? 'CR'
+        ? context.tr('global.cr')
         : _lf
-        ? 'LF'
-        : 'Yok';
+        ? context.tr('global.lf')
+        : context.tr('global.none');
     return PopScope(
       canPop: !_saving,
       child: AlertDialog(
-        title: Text(widget.isEditing ? 'Komutu düzenle' : 'Komut kaydet'),
+        title: Text(
+          widget.isEditing
+              ? context.tr('serial.editCommand')
+              : context.tr('serial.saveCommand'),
+        ),
         content: SizedBox(
           width: 420,
           child: SingleChildScrollView(
@@ -86,12 +99,15 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                     autofocus: true,
                     enabled: !_saving,
                     textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(labelText: 'Komut adı'),
+                    decoration: InputDecoration(
+                      labelText: context.tr('serial.commandName'),
+                    ),
                     validator: (value) {
                       final name = value?.trim() ?? '';
-                      if (name.isEmpty) return 'Komut adı girin.';
+                      if (name.isEmpty)
+                        return context.tr('serial.commandNameRequired');
                       if (widget.existingNames.contains(name.toLowerCase())) {
-                        return 'Bu adla kayıtlı bir komut var.';
+                        return context.tr('serial.commandNameExists');
                       }
                       return null;
                     },
@@ -100,12 +116,15 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                   SegmentedButton<InputMode>(
                     key: const Key('command-mode'),
                     expandedInsets: EdgeInsets.zero,
-                    segments: const [
+                    segments: [
                       ButtonSegment(
                         value: InputMode.ascii,
-                        label: Text('ASCII'),
+                        label: Text(context.tr('global.ascii')),
                       ),
-                      ButtonSegment(value: InputMode.hex, label: Text('HEX')),
+                      ButtonSegment(
+                        value: InputMode.hex,
+                        label: Text(context.tr('global.hex')),
+                      ),
                     ],
                     selected: {_mode},
                     showSelectedIcon: false,
@@ -128,11 +147,11 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                     style: _mono,
                     decoration: InputDecoration(
                       labelText: _mode == InputMode.ascii
-                          ? 'Komut (ASCII)'
-                          : 'Komut (HEX)',
+                          ? context.tr('serial.asciiCommand')
+                          : context.tr('serial.hexCommand'),
                       hintText: _mode == InputMode.ascii
-                          ? 'Metin girin…'
-                          : '41 42 0D 0A',
+                          ? context.tr('global.enterText')
+                          : context.tr('serial.hexHint'),
                       errorMaxLines: 4,
                     ),
                     validator: (value) {
@@ -140,13 +159,23 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                         SerialHelper.encodeInput(value ?? '', _mode);
                         return null;
                       } on FormatException catch (error) {
-                        return error.message;
+                        return context.tr(error.message);
                       }
                     },
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '${_mode == InputMode.ascii ? 'ASCII' : 'HEX'} · Satır sonu: $ending',
+                    context.tr(
+                      'serial.lineEndingSummary',
+                      namedArgs: {
+                        'mode': context.tr(
+                          _mode == InputMode.ascii
+                              ? 'global.ascii'
+                              : 'global.hex',
+                        ),
+                        'ending': ending,
+                      },
+                    ),
                     style: const TextStyle(color: _muted, fontSize: 12),
                   ),
                   Row(
@@ -156,7 +185,7 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                           key: const Key('command-cr'),
                           contentPadding: EdgeInsets.zero,
                           controlAffinity: ListTileControlAffinity.leading,
-                          title: const Text('CR'),
+                          title: Text(context.tr('global.cr')),
                           value: _cr,
                           onChanged: _saving
                               ? null
@@ -168,7 +197,7 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                           key: const Key('command-lf'),
                           contentPadding: EdgeInsets.zero,
                           controlAffinity: ListTileControlAffinity.leading,
-                          title: const Text('LF'),
+                          title: Text(context.tr('global.lf')),
                           value: _lf,
                           onChanged: _saving
                               ? null
@@ -180,7 +209,7 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                   if (_saveError != null) ...[
                     const SizedBox(height: 12),
                     Text(
-                      _saveError!,
+                      context.tr(_saveError!),
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -194,7 +223,7 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
         actions: [
           TextButton(
             onPressed: _saving ? null : () => Navigator.of(context).pop(),
-            child: const Text('Vazgeç'),
+            child: Text(context.tr('global.cancel')),
           ),
           FilledButton(
             onPressed: _saving ? null : _save,
@@ -203,7 +232,11 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                     dimension: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(widget.isEditing ? 'Güncelle' : 'Kaydet'),
+                : Text(
+                    widget.isEditing
+                        ? context.tr('global.update')
+                        : context.tr('global.save'),
+                  ),
           ),
         ],
       ),

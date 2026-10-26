@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:blue_terminal_lib/blue_terminal_lib.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter/services.dart' show PlatformException;
@@ -41,7 +42,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
         );
       },
       onError: (Object error) => _queueConnectionFailure(error),
-      onDone: () => _queueConnectionFailure('Veri bağlantısı kapandı.'),
+      onDone: () => _queueConnectionFailure('serial.dataConnectionClosed'.tr()),
     );
     _connectionSubscription = _serial.connectionChanged.listen(
       (event) {
@@ -50,14 +51,15 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
           final reason = event.error;
           _queueConnectionFailure(
             reason == null || reason.isEmpty
-                ? 'Seri port bağlantısı kapandı.'
-                : 'Seri port bağlantısı koptu: $reason',
+                ? 'serial.connectionClosed'.tr()
+                : 'serial.connectionLostReason'.tr(
+                    namedArgs: {'reason': reason},
+                  ),
           );
         }
       },
       onError: (Object error) => _queueConnectionFailure(error),
-      onDone: () =>
-          _queueConnectionFailure('Seri port bağlantı akışı kapandı.'),
+      onDone: () => _queueConnectionFailure('serial.streamClosed'.tr()),
     );
   }
 
@@ -112,19 +114,31 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  void _onPortAccessStarted(_SerialPortAccessStarted event, Emitter<SerialState> emit,) {
+  void _onPortAccessStarted(
+    _SerialPortAccessStarted event,
+    Emitter<SerialState> emit,
+  ) {
     _emitState(emit, state.copyWith(isRefreshing: true, clearError: true));
   }
 
-  void _onErrorDismissed(SerialErrorDismissed event, Emitter<SerialState> emit,) {
+  void _onErrorDismissed(
+    SerialErrorDismissed event,
+    Emitter<SerialState> emit,
+  ) {
     if (state.error != null) _emitState(emit, state.copyWith(clearError: true));
   }
 
-  Future<void> _onConnectionFailed(_SerialConnectionFailed event, Emitter<SerialState> emit,) async {
+  Future<void> _onConnectionFailed(
+    _SerialConnectionFailed event,
+    Emitter<SerialState> emit,
+  ) async {
     await _connectionFailed(event.error, emit);
   }
 
-  void _onPortAccessCompleted(_SerialPortAccessCompleted event, Emitter<SerialState> emit,) {
+  void _onPortAccessCompleted(
+    _SerialPortAccessCompleted event,
+    Emitter<SerialState> emit,
+  ) {
     _requestingPort = false;
     if (_inactive) return;
     final port = event.port;
@@ -203,7 +217,10 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     );
   }
 
-  Future<void> _onRefreshPorts(SerialPortsRefreshRequested event, Emitter<SerialState> emit,) async {
+  Future<void> _onRefreshPorts(
+    SerialPortsRefreshRequested event,
+    Emitter<SerialState> emit,
+  ) async {
     if (_inactive ||
         _requestingPort ||
         state.isRefreshing ||
@@ -232,7 +249,10 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _onConnect(SerialConnectionRequested event, Emitter<SerialState> emit,) async {
+  Future<void> _onConnect(
+    SerialConnectionRequested event,
+    Emitter<SerialState> emit,
+  ) async {
     if (_inactive ||
         _requestingPort ||
         state.isBusy ||
@@ -242,16 +262,11 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
       return;
     final path = state.selectedPort;
     if (path == null) {
-      _emitState(emit, state.copyWith(error: 'Önce bir seri port seçin.'));
+      _emitState(emit, state.copyWith(error: 'serial.selectPortFirst'.tr()));
       return;
     }
     if (event.baudRate <= 0 || event.baudRate > 2147483647) {
-      _emitState(
-        emit,
-        state.copyWith(
-          error: 'Baud hızı 1–2147483647 arasında bir tam sayı olmalı.',
-        ),
-      );
+      _emitState(emit, state.copyWith(error: 'serial.invalidBaudRate'.tr()));
       return;
     }
     _emitState(
@@ -326,7 +341,10 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _onDisconnect(SerialDisconnectionRequested event, Emitter<SerialState> emit,) async {
+  Future<void> _onDisconnect(
+    SerialDisconnectionRequested event,
+    Emitter<SerialState> emit,
+  ) async {
     if (_inactive || !state.isConnected || state.isSending) return;
     _emitState(emit, state.copyWith(status: ConnectionStatus.disconnecting));
     _cancelPendingWrites();
@@ -354,7 +372,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
       if (!event.queueIfBusy)
         _emitState(
           emit,
-          state.copyWith(error: 'Veri göndermek için önce bağlanın.'),
+          state.copyWith(error: 'serial.connectBeforeSend'.tr()),
         );
       _completeRequest(event, false);
       return;
@@ -387,11 +405,11 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     try {
       final path = _path;
       if (path == null || _portFailed || !state.isConnected) {
-        throw StateError('Bağlı bir port yok.');
+        throw StateError('serial.noConnectedPort'.tr());
       }
       final count = await _serial.write(path, write.bytes, timeoutMs: 2000);
       if (_inactive || _portFailed || !state.isConnected) {
-        throw StateError('Seri port bağlantısı koptu.');
+        throw StateError('serial.connectionLost'.tr());
       }
       if (!_inactive) add(_SerialWriteCompleted(write, count: count));
     } catch (error) {
@@ -403,7 +421,10 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _onWriteCompleted(_SerialWriteCompleted event, Emitter<SerialState> emit,) async {
+  Future<void> _onWriteCompleted(
+    _SerialWriteCompleted event,
+    Emitter<SerialState> emit,
+  ) async {
     final write = event.write;
     if (!identical(_activeWrite, write)) return;
     var success = false;
@@ -416,7 +437,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
       final count = event.count;
       final bytes = write.bytes;
       if (count == null || count < 0 || count > bytes.length) {
-        await _connectionFailed('Geçersiz yazma sonucu alındı.', emit);
+        await _connectionFailed('serial.invalidWriteResult'.tr(), emit);
         return;
       }
       if (count > 0)
@@ -427,9 +448,12 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
         );
       if (count != bytes.length) {
         await _connectionFailed(
-          'Eksik gönderim: ${bytes.length} baytın $count baytı '
-          'yazıldı. Bağlantı kapatıldı; cihaz durumunu kontrol edin. '
-          'Girdiyi tekrar göndermek daha önce yazılan baytları tekrarlar.',
+          'serial.partialWrite'.tr(
+            namedArgs: {
+              'total': bytes.length.toString(),
+              'count': count.toString(),
+            },
+          ),
           emit,
         );
         return;
@@ -453,7 +477,10 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _connectionFailed(Object error, Emitter<SerialState> emit,) async {
+  Future<void> _connectionFailed(
+    Object error,
+    Emitter<SerialState> emit,
+  ) async {
     if (_inactive || !state.isConnected) return;
     _emitState(
       emit,
@@ -469,7 +496,12 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
       _emitState(
         emit,
         state.copyWith(
-          error: '${state.error ?? ''}\n${_describeError(closeError)}',
+          error: 'global.multipleMessages'.tr(
+            namedArgs: {
+              'first': state.error ?? '',
+              'second': _describeError(closeError),
+            },
+          ),
         ),
       );
     } finally {
@@ -491,7 +523,11 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     );
   }
 
-  void _append(TrafficDirection direction, Uint8List bytes, Emitter<SerialState> emit,) {
+  void _append(
+    TrafficDirection direction,
+    Uint8List bytes,
+    Emitter<SerialState> emit,
+  ) {
     if (_inactive || bytes.isEmpty) return;
     var historyBytes = state.historyBytes;
     var droppedRecords = state.droppedRecords;
@@ -529,27 +565,32 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
   Future<void> close() => _closeFuture ??= _shutdown();
 
   String _describeError(Object error) {
-    if (error is StateError) return error.message.toString();
+    if (error is String) return error;
+    if (error is StateError) {
+      return error.message.trExists() ? error.message.tr() : error.message;
+    }
+    if (error is FormatException) {
+      return error.message.trExists() ? error.message.tr() : error.message;
+    }
     if (error is PlatformException) {
       final message = error.message ?? error.code;
       if (error.code == 'insecure-context') {
-        return 'Web seri port erişimi için uygulamayı HTTPS veya localhost üzerinden açın.';
+        return 'serial.webSecureContextRequired'.tr();
       }
       if (error.code == 'unsupported-platform') {
-        return 'Bu tarayıcı Web Serial desteklemiyor. Masaüstü Chrome ile açın.';
+        return 'serial.webSerialUnsupported'.tr();
       }
       if (error.code == 'usb-permission-denied') {
-        return 'USB erişim izni verilmedi. Yeniden bağlanıp Android izin penceresinde izin verin.';
+        return 'serial.usbPermissionDenied'.tr();
       }
       if (message.toLowerCase().contains('permission denied')) {
-        return 'Port erişim izni yok. Kullanıcınızın cihaz grubuna '
-            '(genellikle dialout veya uucp) erişimini kontrol edin.';
+        return 'serial.portPermissionDenied'.tr();
       }
       if (error.code == 'port-busy' ||
           message.toLowerCase().contains('device or resource busy')) {
-        return 'Port meşgul. Portu kullanan diğer uygulamayı kapatın.';
+        return 'serial.portBusy'.tr();
       }
-      return 'Seri port işlemi başarısız: $message';
+      return 'serial.operationFailed'.tr(namedArgs: {'error': message});
     }
     return error.toString();
   }

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -102,8 +103,8 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
         child: AlertDialog(
           title: Text(
             widget.connection == null
-                ? 'Yeni SSH bağlantısı'
-                : 'Bağlantıyı düzenle',
+                ? context.tr('ssh.newConnection')
+                : context.tr('ssh.editConnection'),
           ),
           content: SizedBox(
             width: 440,
@@ -123,8 +124,8 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
                       controller: _name,
                       enabled: !busy,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Bağlantı adı (isteğe bağlı)',
+                      decoration: InputDecoration(
+                        labelText: context.tr('ssh.connectionName'),
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -134,15 +135,15 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
                       autocorrect: false,
                       enableSuggestions: false,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Sunucu',
-                        hintText: '192.168.1.10 veya sunucu adresi',
+                      decoration: InputDecoration(
+                        labelText: context.tr('ssh.host'),
+                        hintText: context.tr('ssh.hostHint'),
                       ),
                       validator: (value) =>
                           value == null ||
                               value.trim().isEmpty ||
                               RegExp(r'\s').hasMatch(value.trim())
-                          ? 'Geçerli bir sunucu adresi girin.'
+                          ? context.tr('ssh.invalidHost')
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -152,11 +153,13 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(labelText: 'Port'),
+                      decoration: InputDecoration(
+                        labelText: context.tr('global.port'),
+                      ),
                       validator: (value) {
                         final port = int.tryParse(value?.trim() ?? '');
                         return port == null || port < 1 || port > 65535
-                            ? 'Port 1–65535 arasında olmalı.'
+                            ? context.tr('ssh.invalidPort')
                             : null;
                       },
                     ),
@@ -167,12 +170,12 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
                       autocorrect: false,
                       enableSuggestions: false,
                       textInputAction: TextInputAction.next,
-                      decoration: const InputDecoration(
-                        labelText: 'Kullanıcı adı',
+                      decoration: InputDecoration(
+                        labelText: context.tr('ssh.username'),
                       ),
                       validator: (value) =>
                           value == null || value.trim().isEmpty
-                          ? 'Kullanıcı adı girin.'
+                          ? context.tr('ssh.usernameRequired')
                           : null,
                     ),
                     const SizedBox(height: 12),
@@ -184,14 +187,14 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
                       enableSuggestions: false,
                       textInputAction: TextInputAction.done,
                       decoration: InputDecoration(
-                        labelText: 'Şifre',
+                        labelText: context.tr('ssh.password'),
                         helperText: widget.connection == null
                             ? null
-                            : 'Boş bırakırsanız kayıtlı şifre kullanılır.',
+                            : context.tr('ssh.savedPasswordHint'),
                         suffixIcon: IconButton(
                           tooltip: _showPassword
-                              ? 'Şifreyi gizle'
-                              : 'Şifreyi göster',
+                              ? context.tr('ssh.hidePassword')
+                              : context.tr('ssh.showPassword'),
                           onPressed: busy
                               ? null
                               : () => setState(
@@ -236,15 +239,15 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
                           : const Icon(Icons.network_check_rounded),
                       label: Text(
                         state.isConnecting
-                            ? 'Bağlantı test ediliyor…'
-                            : 'Bağlantıyı test et',
+                            ? context.tr('ssh.testingConnection')
+                            : context.tr('ssh.testConnection'),
                       ),
                     ),
                     if (state.isConnecting)
                       TextButton(
                         onPressed: () =>
                             _bloc.add(const SshDisconnectRequested()),
-                        child: const Text('Testi iptal et'),
+                        child: Text(context.tr('ssh.cancelTest')),
                       ),
                   ],
                 ),
@@ -254,7 +257,7 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
           actions: [
             TextButton(
               onPressed: busy ? null : () => Navigator.of(context).pop(),
-              child: const Text('Vazgeç'),
+              child: Text(context.tr('global.cancel')),
             ),
             FilledButton.icon(
               onPressed: !busy && state.profilesReady ? _save : null,
@@ -264,7 +267,11 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.save_outlined),
-              label: Text(_saving ? 'Kaydediliyor…' : 'Kaydet'),
+              label: Text(
+                _saving
+                    ? context.tr('global.saving')
+                    : context.tr('global.save'),
+              ),
             ),
           ],
         ),

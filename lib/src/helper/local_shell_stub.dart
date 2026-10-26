@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 class LocalShell {
   LocalShell({int rows = 24, int columns = 80}) {
-    throw UnsupportedError('Tarayıcıda yerel sistem kabuğu açılamıyor.');
+    throw UnsupportedError('local.webShellUnsupported');
   }
   Stream<Uint8List> get output => const Stream.empty();
   Future<int> get exitCode => Future.value(0);

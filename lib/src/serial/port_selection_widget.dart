@@ -1,7 +1,20 @@
 part of 'serial_terminal.dart';
 
 class PortSelectionWidget extends StatefulWidget {
-  const PortSelectionWidget({super.key, required this.ports, required this.selectedPort, required this.isConnected, required this.isBusy, required this.isRefreshing, required this.isSending, required this.onPortChanged, required this.onRefresh, required this.onConnect, required this.onDisconnect, this.onRequestPort,});
+  const PortSelectionWidget({
+    super.key,
+    required this.ports,
+    required this.selectedPort,
+    required this.isConnected,
+    required this.isBusy,
+    required this.isRefreshing,
+    required this.isSending,
+    required this.onPortChanged,
+    required this.onRefresh,
+    required this.onConnect,
+    required this.onDisconnect,
+    this.onRequestPort,
+  });
 
   final List<SerialInfo> ports;
   final String? selectedPort;
@@ -38,12 +51,12 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
             key: ValueKey('port-${widget.selectedPort}'),
             initialValue: widget.selectedPort,
             isExpanded: true,
-            decoration: _controlDecoration('Port').copyWith(
+            decoration: _controlDecoration(context.tr('global.port')).copyWith(
               suffixIcon: widget.onRequestPort == null
                   ? null
                   : IconButton(
                       key: const Key('request-port-button'),
-                      tooltip: 'Port seç ve izin ver',
+                      tooltip: context.tr('serial.authorizePort'),
                       onPressed: locked || widget.isRefreshing
                           ? null
                           : widget.onRequestPort,
@@ -52,10 +65,10 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
             ),
             hint: Text(
               widget.isRefreshing
-                  ? 'Portlar taranıyor…'
+                  ? context.tr('serial.scanningPorts')
                   : widget.onRequestPort != null
-                  ? 'Port seçin (+)'
-                  : 'Port bulunamadı',
+                  ? context.tr('serial.selectPort')
+                  : context.tr('serial.noPorts'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -75,7 +88,7 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
               DropdownMenuItem(
                 value: "refresh",
                 child: Text(
-                  "Refresh",
+                  context.tr('global.refresh'),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -100,7 +113,7 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
             initialValue: _baudRate,
             isExpanded: true,
             menuMaxHeight: 320,
-            decoration: _controlDecoration('Baud'),
+            decoration: _controlDecoration(context.tr('global.baudRate')),
             items: [
               for (final rate in [
                 1200,
@@ -135,7 +148,9 @@ class _PortSelectionWidgetState extends State<PortSelectionWidget> {
         const SizedBox(width: 8),
         IconButton(
           key: const Key('connect-button'),
-          tooltip: widget.isConnected ? 'Bağlantıyı kes' : 'Bağlan',
+          tooltip: widget.isConnected
+              ? context.tr('global.disconnect')
+              : context.tr('global.connect'),
           style: IconButton.styleFrom(
             minimumSize: const Size(48, 48),
             backgroundColor: widget.isConnected

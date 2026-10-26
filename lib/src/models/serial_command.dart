@@ -1,9 +1,14 @@
-
-
 import 'input_mode.dart';
 import '../helper/serial.dart';
+
 class SerialCommand {
-  const SerialCommand({required this.name, required this.text, required this.mode, required this.cr, required this.lf,});
+  const SerialCommand({
+    required this.name,
+    required this.text,
+    required this.mode,
+    required this.cr,
+    required this.lf,
+  });
 
   final String name;
   final String text;
@@ -21,11 +26,11 @@ class SerialCommand {
 
   factory SerialCommand.fromJson(Object? json) {
     if (json is! Map<String, dynamic>) {
-      throw const FormatException('Geçersiz komut kaydı.');
+      throw const FormatException('serial.invalidCommandRecord');
     }
     final name = json['name'];
     if (name is! String || name.trim().isEmpty) {
-      throw const FormatException('Geçersiz komut kaydı.');
+      throw const FormatException('serial.invalidCommandRecord');
     }
     // Keep commands saved by the short-lived byte-only format readable.
     if (json.containsKey('bytes')) {
@@ -33,7 +38,7 @@ class SerialCommand {
       if (bytes is! List ||
           bytes.isEmpty ||
           bytes.any((byte) => byte is! int || byte < 0 || byte > 255)) {
-        throw const FormatException('Geçersiz komut kaydı.');
+        throw const FormatException('serial.invalidCommandRecord');
       }
       return SerialCommand(
         name: name.trim(),
@@ -51,7 +56,7 @@ class SerialCommand {
         (mode != 'ascii' && mode != 'hex') ||
         cr is! bool ||
         lf is! bool) {
-      throw const FormatException('Geçersiz komut kaydı.');
+      throw const FormatException('serial.invalidCommandRecord');
     }
     final inputMode = mode == 'hex' ? InputMode.hex : InputMode.ascii;
     SerialHelper.encodeInput(text, inputMode);

@@ -1,9 +1,9 @@
 part of 'serial_terminal.dart';
 
 enum _TrafficDisplayMode {
-  ascii('ASCII'),
-  hex('HEX'),
-  both('İkisi');
+  ascii('global.ascii'),
+  hex('global.hex'),
+  both('global.both');
 
   const _TrafficDisplayMode(this.label);
 
@@ -11,7 +11,16 @@ enum _TrafficDisplayMode {
 }
 
 class TrafficPanel extends StatefulWidget {
-  const TrafficPanel({super.key, required this.records, required this.rxBytes, required this.txBytes, required this.droppedRecords, required this.isConnected, required this.hasPorts, required this.onClear,});
+  const TrafficPanel({
+    super.key,
+    required this.records,
+    required this.rxBytes,
+    required this.txBytes,
+    required this.droppedRecords,
+    required this.isConnected,
+    required this.hasPorts,
+    required this.onClear,
+  });
   final List<TrafficRecord> records;
   final int rxBytes;
   final int txBytes;
@@ -103,8 +112,8 @@ class _TrafficPanelState extends State<TrafficPanel> {
                             if (value != null) _setDisplay(ascii: value);
                           },
                         ),
-                        const Text(
-                          'ASCII',
+                        Text(
+                          context.tr('global.ascii'),
                           style: TextStyle(fontSize: 12),
                         ),
                       ],
@@ -116,13 +125,15 @@ class _TrafficPanelState extends State<TrafficPanel> {
                       children: [
                         Checkbox(
                           key: const Key('traffic-hex'),
-                          value:
-                          _displayMode != _TrafficDisplayMode.ascii,
+                          value: _displayMode != _TrafficDisplayMode.ascii,
                           onChanged: (value) {
                             if (value != null) _setDisplay(hex: value);
                           },
                         ),
-                        const Text('HEX', style: TextStyle(fontSize: 12)),
+                        Text(
+                          context.tr('global.hex'),
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ],
                     ),
                   ),
@@ -138,21 +149,17 @@ class _TrafficPanelState extends State<TrafficPanel> {
                           if (_autoScroll) _scrollToEnd();
                         },
                       ),
-                      const Text(
-                        'Takip et',
+                      Text(
+                        context.tr('serial.follow'),
                         style: TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
 
-
                   IconButton(
-                    tooltip: 'Ekranı temizle',
+                    tooltip: context.tr('serial.clearScreen'),
                     onPressed: widget.onClear,
-                    icon: const Icon(
-                      Icons.delete_outline_rounded,
-                      size: 20,
-                    ),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 20),
                   ),
                 ],
               ),
@@ -172,8 +179,8 @@ class _TrafficPanelState extends State<TrafficPanel> {
                               color: _muted,
                             ),
                             const SizedBox(height: 8),
-                            const Text(
-                              'Veri bekleniyor',
+                            Text(
+                              context.tr('serial.waitingForData'),
                               style: TextStyle(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w500,
@@ -182,10 +189,10 @@ class _TrafficPanelState extends State<TrafficPanel> {
                             const SizedBox(height: 6),
                             Text(
                               widget.isConnected
-                                  ? 'Gelen ve gönderilen baytlar burada görünecek.'
+                                  ? context.tr('serial.incomingOutgoingHint')
                                   : !widget.hasPorts
-                                  ? 'Cihazınızı takın ve port listesini yenileyin.'
-                                  : 'Portu ve baud hızını seçip bağlantıyı başlatın.',
+                                  ? context.tr('serial.connectDeviceHint')
+                                  : context.tr('serial.selectPortHint'),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
                                 color: _muted,
@@ -241,19 +248,37 @@ class _TrafficPanelState extends State<TrafficPanel> {
                       alignment: WrapAlignment.spaceBetween,
                       children: [
                         Text(
-                          '${widget.records.length} kayıt',
+                          context.tr(
+                            'serial.recordCount',
+                            namedArgs: {
+                              'count': widget.records.length.toString(),
+                            },
+                          ),
                           style: const TextStyle(color: _muted, fontSize: 11),
                         ),
                         if (compact) ...[
-                          _counter('RX', widget.rxBytes, _rxColor),
-                          _counter('TX', widget.txBytes, _txColor),
+                          _counter(
+                            'serial.rxCounter',
+                            widget.rxBytes,
+                            _rxColor,
+                          ),
+                          _counter(
+                            'serial.txCounter',
+                            widget.txBytes,
+                            _txColor,
+                          ),
                         ],
                         Text(
                           widget.droppedRecords > 0
-                              ? '${widget.droppedRecords} eski kayıt silindi'
+                              ? context.tr(
+                                  'serial.droppedRecordCount',
+                                  namedArgs: {
+                                    'count': widget.droppedRecords.toString(),
+                                  },
+                                )
                               : _displayMode == _TrafficDisplayMode.both
-                              ? 'ASCII + HEX'
-                              : _displayMode.label,
+                              ? context.tr('global.asciiHex')
+                              : context.tr(_displayMode.label),
                           style: const TextStyle(color: _muted, fontSize: 11),
                         ),
                       ],
@@ -270,14 +295,18 @@ class _TrafficPanelState extends State<TrafficPanel> {
 
   Widget _counter(String label, int count, Color color) {
     return Text(
-      '$label  $count B',
+      context.tr(label, namedArgs: {'count': count.toString()}),
       style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: color),
     );
   }
 }
 
 class _TrafficRow extends StatelessWidget {
-  const _TrafficRow({super.key, required this.record, required this.displayMode,});
+  const _TrafficRow({
+    super.key,
+    required this.record,
+    required this.displayMode,
+  });
 
   final TrafficRecord record;
   final _TrafficDisplayMode displayMode;
@@ -314,7 +343,10 @@ class _TrafficRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${rx ? '↓ RX' : '↑ TX'} · ${record.bytes.length} B',
+                      context.tr(
+                        rx ? 'serial.rxMetadata' : 'serial.txMetadata',
+                        namedArgs: {'count': record.bytes.length.toString()},
+                      ),
                       style: _mono.copyWith(color: color, fontSize: 12),
                     ),
                   ],
@@ -333,7 +365,7 @@ class _TrafficRow extends StatelessWidget {
                       if (displayMode != _TrafficDisplayMode.hex)
                         _data(
                           context,
-                          'ASCII',
+                          context.tr('global.ascii'),
                           SerialHelper.formatAscii(record.bytes),
                           () => SerialHelper.asciiClipboardText(record.bytes),
                         ),
@@ -342,7 +374,7 @@ class _TrafficRow extends StatelessWidget {
                       if (displayMode != _TrafficDisplayMode.ascii)
                         _data(
                           context,
-                          'HEX',
+                          context.tr('global.hex'),
                           SerialHelper.formatHex(record.bytes),
                           () => SerialHelper.formatHex(record.bytes),
                         ),
@@ -357,19 +389,21 @@ class _TrafficRow extends StatelessWidget {
     );
   }
 
-  Widget _data(BuildContext context, String label, String value, String Function() clipboardText,) => Row(
+  Widget _data(
+    BuildContext context,
+    String label,
+    String value,
+    String Function() clipboardText,
+  ) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       IconButton(
         key: ValueKey('copy-${label.toLowerCase()}'),
-        constraints: BoxConstraints(
-            maxWidth: 21,
-            maxHeight: 21
-        ),
+        constraints: BoxConstraints(maxWidth: 21, maxHeight: 21),
         padding: EdgeInsets.all(0),
-        tooltip: '$label kopyala',
+        tooltip: context.tr('global.copyLabel', namedArgs: {'label': label}),
         onPressed: () => _copy(context, label, clipboardText()),
-        icon: const Icon(Icons.content_copy_rounded, size: 18,),
+        icon: const Icon(Icons.content_copy_rounded, size: 18),
       ),
 
       Expanded(
@@ -382,7 +416,7 @@ class _TrafficRow extends StatelessWidget {
                   text: '$label= ',
                   style: const TextStyle(color: _muted),
                 ),
-                TextSpan(text: value, ),
+                TextSpan(text: value),
               ],
             ),
             style: _mono,
@@ -394,18 +428,21 @@ class _TrafficRow extends StatelessWidget {
   );
 
   Future<void> _copy(BuildContext context, String label, String text) async {
-    var message = '$label kopyalandı.';
+    var message = 'global.copiedLabel';
     try {
       await Clipboard.setData(ClipboardData(text: text));
     } catch (_) {
-      message = '$label kopyalanamadı.';
+      message = 'global.copyFailedLabel';
     }
     if (!context.mounted) return;
     final messenger = ScaffoldMessenger.maybeOf(context);
     messenger
       ?..hideCurrentSnackBar()
       ..showSnackBar(
-        SnackBar(content: Text(message), duration: const Duration(seconds: 1)),
+        SnackBar(
+          content: Text(context.tr(message, namedArgs: {'label': label})),
+          duration: const Duration(seconds: 1),
+        ),
       );
   }
 }

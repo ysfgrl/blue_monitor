@@ -1,35 +1,57 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'src/bloc/local_bloc/local_bloc.dart';
+import 'src/bloc/env_bloc/env_bloc.dart';
 import 'src/bloc/serial_bloc/serial_bloc.dart';
 import 'src/bloc/ssh_bloc/ssh_bloc.dart';
 import 'src/router.dart';
+class _TranslationAssetLoader extends RootBundleAssetLoader {
+  const _TranslationAssetLoader();
 
-void main() => runApp(
-  MultiBlocProvider(
-    providers: [
-      BlocProvider<LocalBloc>(
-        create: (_) => LocalBloc()..add(const LocalStarted()),
+  @override
+  String getLocalePath(String basePath, Locale locale) =>
+      '$basePath/$locale.json';
+}
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
+  runApp(
+    EasyLocalization(
+      supportedLocales: const [Locale('tr', 'TR'), Locale('en', 'US')],
+      path: 'assets/translations',
+      startLocale: const Locale('tr', 'TR'),
+      fallbackLocale: const Locale('tr', 'TR'),
+      assetLoader: _TranslationAssetLoader(),
+      saveLocale: true,
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider<EnvBloc>(
+            lazy: false,
+            create: (_) => EnvBloc()..add(const EnvReadList()),
+          ),
+          BlocProvider<LocalBloc>(create: (_) => LocalBloc()),
+          BlocProvider<SshBloc>(
+            lazy: false,
+            create: (_) {
+              final bloc = SshBloc();
+              if (!kIsWeb) bloc.add(const SshConnectionsRequested());
+              return bloc;
+            },
+          ),
+          BlocProvider<SerialBloc>(
+            lazy: false,
+            create: (_) =>
+                SerialBloc()..add(const SerialPortsRefreshRequested()),
+          ),
+        ],
+        child: const SerialMonitorApp(),
       ),
-      BlocProvider<SshBloc>(
-        lazy: false,
-        create: (_) {
-          final bloc = SshBloc();
-          if (!kIsWeb) bloc.add(const SshConnectionsRequested());
-          return bloc;
-        },
-      ),
-      BlocProvider<SerialBloc>(
-        lazy: false,
-        create: (_) => SerialBloc()..add(const SerialPortsRefreshRequested()),
-      ),
-    ],
-    child: const SerialMonitorApp(),
-  ),
-);
+    ),
+  );
+}
 
 class SerialMonitorApp extends StatelessWidget {
   const SerialMonitorApp({super.key});
@@ -43,15 +65,11 @@ class SerialMonitorApp extends StatelessWidget {
     );
     return MaterialApp.router(
       routerConfig: appRouter,
-      title: 'Serial Terminal',
+      onGenerateTitle: (context) => context.tr('global.appTitle'),
       debugShowCheckedModeBanner: false,
-      locale: const Locale('tr'),
-      supportedLocales: const [Locale('tr')],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      locale: context.locale,
+      supportedLocales: context.supportedLocales,
+      localizationsDelegates: context.localizationDelegates,
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: scheme,

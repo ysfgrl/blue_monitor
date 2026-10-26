@@ -7,21 +7,17 @@ import '../models/ssh_connection.dart';
 
 class SshConnectionStore {
   SshConnectionStore()
-      : _storage =const FlutterSecureStorage(
+    : _storage = const FlutterSecureStorage(
+        aOptions: AndroidOptions(resetOnError: false),
+        // This app does not share Keychain items with other applications.
+        mOptions: MacOsOptions(
+          accountName: "Blue Terminal",
+          label: "Blue Terminal SSH",
+          usesDataProtectionKeychain: false,
+        ),
+      );
 
-            aOptions: AndroidOptions(
-                resetOnError: false,
-
-            ),
-            // This app does not share Keychain items with other applications.
-            mOptions: MacOsOptions(
-              accountName: "Blue Monitor",
-                label: "Blue Monitor SSH",
-                usesDataProtectionKeychain: false
-            ),
-          );
-
-  static const _connectionsKey = 'blue_monitor.ssh.connections.v1';
+  static const _connectionsKey = 'blue_terminal.ssh.connections.v1';
   final FlutterSecureStorage _storage;
 
   Future<List<Map<String, dynamic>>> _readRecords() async {
@@ -29,17 +25,17 @@ class SshConnectionStore {
     if (value == null) return [];
     final decoded = jsonDecode(value);
     if (decoded is! List) {
-      throw const FormatException('SSH kayıtları okunamadı.');
+      throw const FormatException('ssh.recordsUnreadable');
     }
     final records = <Map<String, dynamic>>[];
     final ids = <String>{};
     for (final item in decoded) {
       if (item is! Map<String, dynamic> || item['password'] is! String) {
-        throw const FormatException('Geçersiz SSH bağlantı kaydı.');
+        throw const FormatException('ssh.invalidRecord');
       }
       final connection = SshConnection.fromJson(item);
       if (!ids.add(connection.id)) {
-        throw const FormatException('Tekrarlanan SSH bağlantı kaydı.');
+        throw const FormatException('ssh.duplicateRecord');
       }
       records.add(item);
     }
@@ -57,21 +53,24 @@ class SshConnectionStore {
     final record = records
         .where((item) => item['id'] == connection.id)
         .firstOrNull;
-    if (record == null) throw StateError('Kayıtlı SSH bağlantısı bulunamadı.');
+    if (record == null) throw StateError('ssh.connectionNotFound');
     if (!connection.sameEndpoint(SshConnection.fromJson(record))) {
-      throw StateError('Sunucu veya kullanıcı değişti. Şifreyi yeniden girin.');
+      throw StateError('ssh.endpointChanged');
     }
     return record['password'] as String;
   }
 
-  Future<List<SshConnection>> save(SshConnection connection, String? password,) async {
+  Future<List<SshConnection>> save(
+    SshConnection connection,
+    String? password,
+  ) async {
     connection.validate();
     final records = await _readRecords();
     final index = records.indexWhere((item) => item['id'] == connection.id);
     if (password == null) {
       if (index < 0 ||
           !connection.sameEndpoint(SshConnection.fromJson(records[index]))) {
-        throw StateError('Bu bağlantı için şifreyi girin.');
+        throw StateError('ssh.passwordRequired');
       }
       password = records[index]['password'] as String;
     }
@@ -94,7 +93,7 @@ class SshConnectionStore {
   }
 
   String _hostKey(String host, int port) =>
-      'blue_monitor.ssh.host-key.v1.${base64Url.encode(utf8.encode(jsonEncode([host.toLowerCase(), port])))}';
+      'blue_terminal.ssh.host-key.v1.${base64Url.encode(utf8.encode(jsonEncode([host.toLowerCase(), port])))}';
 
   Future<String?> readHostKey(String host, int port) async {
     final key = _hostKey(host, port);
