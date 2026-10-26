@@ -1,33 +1,29 @@
-part of 'monitor_screen.dart';
+part of 'serial_terminal.dart';
 
 class _CommandListDialog extends StatefulWidget {
-  const _CommandListDialog({
-    required this.commands,
-    required this.store,
-    required this.onChanged,
-  });
+  const _CommandListDialog({required this.commands, required this.store, required this.onChanged,});
 
-  final List<SavedCommand> commands;
+  final List<SerialCommand> commands;
   final SavedCommandStore store;
-  final ValueChanged<List<SavedCommand>> onChanged;
+  final ValueChanged<List<SerialCommand>> onChanged;
 
   @override
   State<_CommandListDialog> createState() => _CommandListDialogState();
 }
 
 class _CommandListDialogState extends State<_CommandListDialog> {
-  late List<SavedCommand> _commands = List.of(widget.commands);
+  late List<SerialCommand> _commands = List.of(widget.commands);
   bool _busy = false;
   String? _error;
 
-  Future<void> _editCommand(SavedCommand command) async {
+  Future<void> _editCommand(SerialCommand command) async {
     if (_busy) return;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      await showDialog<SavedCommand>(
+      await showDialog<SerialCommand>(
         context: context,
         barrierDismissible: false,
         builder: (_) => _SaveCommandDialog(
@@ -42,7 +38,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
               .map((item) => item.name.toLowerCase())
               .toSet(),
           onSave: (edited) async {
-            final updated = List<SavedCommand>.of(_commands);
+            final updated = List<SerialCommand>.of(_commands);
             final index = updated.indexOf(command);
             if (index < 0) throw StateError('Komut bulunamadı.');
             updated[index] = edited;
@@ -58,9 +54,9 @@ class _CommandListDialogState extends State<_CommandListDialog> {
     }
   }
 
-  Future<void> _deleteCommand(SavedCommand command) async {
+  Future<void> _deleteCommand(SerialCommand command) async {
     if (_busy) return;
-    final updated = List<SavedCommand>.of(_commands)..remove(command);
+    final updated = List<SerialCommand>.of(_commands)..remove(command);
     setState(() {
       _busy = true;
       _error = null;
@@ -124,7 +120,7 @@ class _CommandListDialogState extends State<_CommandListDialog> {
     );
   }
 
-  Widget _commandRow(SavedCommand command) {
+  Widget _commandRow(SerialCommand command) {
     final ending = command.cr && command.lf
         ? 'CRLF'
         : command.cr

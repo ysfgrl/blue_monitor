@@ -36,14 +36,7 @@ const _ubuntuTerminalTheme = xterm.TerminalTheme(
 );
 
 class TerminalPanel extends StatefulWidget {
-  const TerminalPanel({
-    super.key,
-    required this.incoming,
-    required this.onOutput,
-    required this.isConnected,
-    this.onResize,
-    this.active = true,
-  });
+  const TerminalPanel({super.key, required this.incoming, required this.onOutput, required this.isConnected, this.onResize, this.active = true,});
 
   final Stream<Uint8List> incoming;
   final ValueChanged<Uint8List> onOutput;
@@ -296,25 +289,13 @@ class _TerminalTextSink implements Sink<String> {
 
 /// Applies the mobile Ctrl key to user input without altering terminal replies.
 class _TerminalWithCtrl extends xterm.Terminal {
-  _TerminalWithCtrl({
-    required this.isCtrlPressed,
-    required this.onCtrlUsed,
-    super.maxLines,
-    super.platform,
-    super.onOutput,
-    super.onResize,
-  });
+  _TerminalWithCtrl({required this.isCtrlPressed, required this.onCtrlUsed, super.maxLines, super.platform, super.onOutput, super.onResize,});
 
   final bool Function() isCtrlPressed;
   final VoidCallback onCtrlUsed;
 
   @override
-  bool keyInput(
-    xterm.TerminalKey key, {
-    bool shift = false,
-    bool alt = false,
-    bool ctrl = false,
-  }) {
+  bool keyInput(xterm.TerminalKey key, { bool shift = false, bool alt = false, bool ctrl = false, }) {
     final virtualCtrl = isCtrlPressed();
     final modifier =
         key == xterm.TerminalKey.control ||

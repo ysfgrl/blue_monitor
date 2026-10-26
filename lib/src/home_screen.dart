@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'local/local_terminal.dart';
-import 'widgets/monitor_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -31,11 +29,19 @@ class HomeScreen extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(0, 56),
                     ),
-                    onPressed: () => Navigator.of(context).push<void>(
-                      MaterialPageRoute(builder: (_) => const LocalTerminal()),
-                    ),
+                    onPressed: () => context.go('/local'),
                     icon: const Icon(Icons.terminal_rounded),
                     label: const Text('Local terminal'),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    key: const Key('ssh-terminal'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 56),
+                    ),
+                    onPressed: () => context.go('/ssh'),
+                    icon: const Icon(Icons.dns_rounded),
+                    label: const Text('SSH terminal'),
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
@@ -43,9 +49,7 @@ class HomeScreen extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       minimumSize: const Size(0, 56),
                     ),
-                    onPressed: () => Navigator.of(context).push<void>(
-                      MaterialPageRoute(builder: (_) => const MonitorScreen()),
-                    ),
+                    onPressed: () => context.go('/serial'),
                     icon: const Icon(Icons.usb_rounded),
                     label: const Text('Serial terminal'),
                   ),

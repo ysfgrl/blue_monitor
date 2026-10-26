@@ -1,14 +1,8 @@
-part of 'monitor_screen.dart';
+part of 'serial_terminal.dart';
 
 class MonitorHeader extends StatelessWidget {
-  const MonitorHeader({
-    super.key,
-    this.compact = true,
-    required this.type,
-    required this.onTypeChanged,
-  });
+  const MonitorHeader({super.key, required this.type, required this.onTypeChanged,});
 
-  final bool compact;
   final MonitorType type;
   final ValueChanged<MonitorType>? onTypeChanged;
 
@@ -16,7 +10,7 @@ class MonitorHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final logoSize = compact ? 36.0 : 46.0;
+        final logoSize = 36.0;
         return Wrap(
           alignment: WrapAlignment.spaceBetween,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -33,16 +27,11 @@ class MonitorHeader extends StatelessWidget {
                     color: _rxColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Navigator.of(context).canPop()
-                      ? BackButton(
-                          color: _rxColor,
-                          style: IconButton.styleFrom(padding: EdgeInsets.zero),
-                        )
-                      : Icon(
-                          Icons.terminal_rounded,
-                          color: _rxColor,
-                          size: compact ? 22 : 26,
-                        ),
+                  child: BackButton(
+                    onPressed: () => context.go('/'),
+                    color: _rxColor,
+                    style: IconButton.styleFrom(padding: EdgeInsets.zero),
+                  ),
                 ),
                 const SizedBox(width: 10),
                 ConstrainedBox(
@@ -56,7 +45,7 @@ class MonitorHeader extends StatelessWidget {
                       Text(
                         'Serial Terminal',
                         style: TextStyle(
-                          fontSize: compact ? 20 : 25,
+                          fontSize: 20,
                           fontWeight: FontWeight.w700,
                           letterSpacing: -0.6,
                         ),
@@ -65,7 +54,7 @@ class MonitorHeader extends StatelessWidget {
                         'Linux · Seri port çalışma alanı',
                         style: TextStyle(
                           color: _muted,
-                          fontSize: compact ? 11 : 12,
+                          fontSize: 11,
                         ),
                       ),
                     ],

@@ -1,20 +1,7 @@
-part of 'monitor_screen.dart';
+part of 'serial_terminal.dart';
 
 class PortSelectionWidget extends StatefulWidget {
-  const PortSelectionWidget({
-    super.key,
-    required this.ports,
-    required this.selectedPort,
-    required this.isConnected,
-    required this.isBusy,
-    required this.isRefreshing,
-    required this.isSending,
-    required this.onPortChanged,
-    required this.onRefresh,
-    required this.onConnect,
-    required this.onDisconnect,
-    this.onRequestPort,
-  });
+  const PortSelectionWidget({super.key, required this.ports, required this.selectedPort, required this.isConnected, required this.isBusy, required this.isRefreshing, required this.isSending, required this.onPortChanged, required this.onRefresh, required this.onConnect, required this.onDisconnect, this.onRequestPort,});
 
   final List<SerialInfo> ports;
   final String? selectedPort;

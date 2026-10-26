@@ -2,14 +2,7 @@ part of 'terminal_panel.dart';
 
 /// Keeps the mobile IME connection independent of terminal repaints and resizing.
 class _MobileTerminalInput extends StatefulWidget {
-  const _MobileTerminalInput({
-    super.key,
-    required this.terminal,
-    required this.focusNode,
-    required this.enabled,
-    required this.keyboardEnabled,
-    required this.child,
-  });
+  const _MobileTerminalInput({super.key, required this.terminal, required this.focusNode, required this.enabled, required this.keyboardEnabled, required this.child,});
 
   final xterm.Terminal terminal;
   final FocusNode focusNode;

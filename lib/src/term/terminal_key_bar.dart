@@ -1,15 +1,7 @@
 part of 'terminal_panel.dart';
 
 class _TerminalKeyBar extends StatelessWidget {
-  const _TerminalKeyBar({
-    required this.enabled,
-    required this.ctrlPressed,
-    required this.keyboardOpen,
-    required this.onKeyboardToggle,
-    required this.onCtrlPressed,
-    required this.onCtrlCPressed,
-    required this.onKeyPressed,
-  });
+  const _TerminalKeyBar({required this.enabled, required this.ctrlPressed, required this.keyboardOpen, required this.onKeyboardToggle, required this.onCtrlPressed, required this.onCtrlCPressed, required this.onKeyPressed,});
 
   final bool enabled;
   final bool ctrlPressed;
@@ -107,20 +99,9 @@ class _TerminalKeyBar extends StatelessWidget {
     );
   }
 
-  Widget _key(
-    String label,
-    String tooltip,
-    xterm.TerminalKey key, {
-    IconData? icon,
-  }) => _button(label, tooltip, () => onKeyPressed(key), icon: icon);
+  Widget _key(String label, String tooltip, xterm.TerminalKey key, { IconData? icon, }) => _button(label, tooltip, () => onKeyPressed(key), icon: icon);
 
-  Widget _button(
-    String label,
-    String tooltip,
-    VoidCallback onPressed, {
-    IconData? icon,
-    bool selected = false,
-  }) => Padding(
+  Widget _button(String label, String tooltip, VoidCallback onPressed, { IconData? icon, bool selected = false, }) => Padding(
     padding: const EdgeInsets.only(right: 4),
     child: Tooltip(
       message: tooltip,

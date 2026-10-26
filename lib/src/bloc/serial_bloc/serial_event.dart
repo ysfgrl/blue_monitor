@@ -1,8 +1,11 @@
 part of 'serial_bloc.dart';
 
 @immutable
-sealed class SerialEvent {
+sealed class SerialEvent extends Equatable {
   const SerialEvent();
+
+  @override
+  List<Object?> get props => [];
 }
 
 final class SerialPortsRefreshRequested extends SerialEvent {
@@ -17,21 +20,33 @@ final class _SerialPortAccessCompleted extends SerialEvent {
   const _SerialPortAccessCompleted({this.port, this.error});
   final SerialInfo? port;
   final Object? error;
+
+  @override
+  List<Object?> get props => [port, error];
 }
 
 final class SerialPortSelected extends SerialEvent {
   const SerialPortSelected(this.path);
   final String? path;
+
+  @override
+  List<Object?> get props => [path];
 }
 
 final class SerialTypeChanged extends SerialEvent {
   const SerialTypeChanged(this.type);
   final MonitorType type;
+
+  @override
+  List<Object?> get props => [type];
 }
 
 final class SerialConnectionRequested extends SerialEvent {
   const SerialConnectionRequested(this.baudRate);
   final int baudRate;
+
+  @override
+  List<Object?> get props => [baudRate];
 }
 
 final class SerialDisconnectionRequested extends SerialEvent {
@@ -48,6 +63,9 @@ final class SerialSendRequested extends SerialEvent {
 
   /// Allows the send input to clear only after a successful transfer.
   Future<bool> get result => _completion.future;
+
+  @override
+  List<Object?> get props => [bytes, queueIfBusy];
 }
 
 final class SerialErrorDismissed extends SerialEvent {
@@ -61,11 +79,17 @@ final class SerialHistoryCleared extends SerialEvent {
 final class _SerialDataReceived extends SerialEvent {
   const _SerialDataReceived(this.bytes);
   final Uint8List bytes;
+
+  @override
+  List<Object?> get props => [bytes];
 }
 
 final class _SerialConnectionFailed extends SerialEvent {
   const _SerialConnectionFailed(this.error);
   final Object error;
+
+  @override
+  List<Object?> get props => [error];
 }
 
 final class _SerialWriteCompleted extends SerialEvent {
@@ -73,4 +97,7 @@ final class _SerialWriteCompleted extends SerialEvent {
   final SerialSendRequested write;
   final int? count;
   final Object? error;
+
+  @override
+  List<Object?> get props => [write, count, error];
 }

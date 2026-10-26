@@ -1,4 +1,4 @@
-part of 'monitor_screen.dart';
+part of 'serial_terminal.dart';
 
 enum _TrafficDisplayMode {
   ascii('ASCII'),
@@ -11,19 +11,7 @@ enum _TrafficDisplayMode {
 }
 
 class TrafficPanel extends StatefulWidget {
-  const TrafficPanel({
-    super.key,
-    required this.compact,
-    required this.records,
-    required this.rxBytes,
-    required this.txBytes,
-    required this.droppedRecords,
-    required this.isConnected,
-    required this.hasPorts,
-    required this.onClear,
-  });
-
-  final bool compact;
+  const TrafficPanel({super.key, required this.records, required this.rxBytes, required this.txBytes, required this.droppedRecords, required this.isConnected, required this.hasPorts, required this.onClear,});
   final List<TrafficRecord> records;
   final int rxBytes;
   final int txBytes;
@@ -93,7 +81,7 @@ class _TrafficPanelState extends State<TrafficPanel> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = widget.compact || constraints.maxWidth < 600;
+        final compact = constraints.maxWidth < 600;
         return Column(
           children: [
             Padding(
@@ -289,11 +277,7 @@ class _TrafficPanelState extends State<TrafficPanel> {
 }
 
 class _TrafficRow extends StatelessWidget {
-  const _TrafficRow({
-    super.key,
-    required this.record,
-    required this.displayMode,
-  });
+  const _TrafficRow({super.key, required this.record, required this.displayMode,});
 
   final TrafficRecord record;
   final _TrafficDisplayMode displayMode;
@@ -350,8 +334,8 @@ class _TrafficRow extends StatelessWidget {
                         _data(
                           context,
                           'ASCII',
-                          formatAscii(record.bytes),
-                          () => asciiClipboardText(record.bytes),
+                          SerialHelper.formatAscii(record.bytes),
+                          () => SerialHelper.asciiClipboardText(record.bytes),
                         ),
                       if (displayMode == _TrafficDisplayMode.both)
                         const SizedBox(height: 4),
@@ -359,8 +343,8 @@ class _TrafficRow extends StatelessWidget {
                         _data(
                           context,
                           'HEX',
-                          formatHex(record.bytes),
-                          () => formatHex(record.bytes),
+                          SerialHelper.formatHex(record.bytes),
+                          () => SerialHelper.formatHex(record.bytes),
                         ),
                     ],
                   ),
@@ -373,12 +357,7 @@ class _TrafficRow extends StatelessWidget {
     );
   }
 
-  Widget _data(
-    BuildContext context,
-    String label,
-    String value,
-    String Function() clipboardText,
-  ) => Row(
+  Widget _data(BuildContext context, String label, String value, String Function() clipboardText,) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       IconButton(

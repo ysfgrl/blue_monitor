@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:blue_terminal_lib/blue_terminal_lib.dart';
+import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart' show immutable;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,24 +15,17 @@ part 'serial_state.dart';
 class SerialBloc extends Bloc<SerialEvent, SerialState> {
   SerialBloc() : super(const SerialState()) {
     on<SerialPortsRefreshRequested>(_onRefreshPorts);
-    on<_SerialPortAccessStarted>((event, emit) {
-      _emitState(emit, state.copyWith(isRefreshing: true, clearError: true));
-    });
+    on<_SerialPortAccessStarted>(_onPortAccessStarted);
     on<_SerialPortAccessCompleted>(_onPortAccessCompleted);
     on<SerialPortSelected>(_onPortSelected);
     on<SerialTypeChanged>(_onTypeChanged);
     on<SerialConnectionRequested>(_onConnect);
     on<SerialDisconnectionRequested>(_onDisconnect);
     on<SerialSendRequested>(_onSend);
-    on<SerialErrorDismissed>((event, emit) {
-      if (state.error != null)
-        _emitState(emit, state.copyWith(clearError: true));
-    });
+    on<SerialErrorDismissed>(_onErrorDismissed);
     on<SerialHistoryCleared>(_onClearHistory);
     on<_SerialDataReceived>(_onDataReceived);
-    on<_SerialConnectionFailed>((event, emit) async {
-      await _connectionFailed(event.error, emit);
-    });
+    on<_SerialConnectionFailed>(_onConnectionFailed);
     on<_SerialWriteCompleted>(_onWriteCompleted);
     _dataSubscription = _serial.dataReceived.listen(
       (event) {
@@ -74,7 +68,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
   final _serial = BlueTerminalLib();
   final _incomingBytes = StreamController<Uint8List>.broadcast(sync: true);
   final _pendingWrites = ListQueue<SerialSendRequested>();
-  final _sendRequests = <SerialSendRequested>{};
+  final _sendRequests = HashSet<SerialSendRequested>.identity();
   final _records = ListQueue<TrafficRecord>();
   late final StreamSubscription<SerialData> _dataSubscription;
   late final StreamSubscription<SerialConnection> _connectionSubscription;
@@ -118,10 +112,19 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  void _onPortAccessCompleted(
-    _SerialPortAccessCompleted event,
-    Emitter<SerialState> emit,
-  ) {
+  void _onPortAccessStarted(_SerialPortAccessStarted event, Emitter<SerialState> emit,) {
+    _emitState(emit, state.copyWith(isRefreshing: true, clearError: true));
+  }
+
+  void _onErrorDismissed(SerialErrorDismissed event, Emitter<SerialState> emit,) {
+    if (state.error != null) _emitState(emit, state.copyWith(clearError: true));
+  }
+
+  Future<void> _onConnectionFailed(_SerialConnectionFailed event, Emitter<SerialState> emit,) async {
+    await _connectionFailed(event.error, emit);
+  }
+
+  void _onPortAccessCompleted(_SerialPortAccessCompleted event, Emitter<SerialState> emit,) {
     _requestingPort = false;
     if (_inactive) return;
     final port = event.port;
@@ -200,10 +203,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     );
   }
 
-  Future<void> _onRefreshPorts(
-    SerialPortsRefreshRequested event,
-    Emitter<SerialState> emit,
-  ) async {
+  Future<void> _onRefreshPorts(SerialPortsRefreshRequested event, Emitter<SerialState> emit,) async {
     if (_inactive ||
         _requestingPort ||
         state.isRefreshing ||
@@ -232,10 +232,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _onConnect(
-    SerialConnectionRequested event,
-    Emitter<SerialState> emit,
-  ) async {
+  Future<void> _onConnect(SerialConnectionRequested event, Emitter<SerialState> emit,) async {
     if (_inactive ||
         _requestingPort ||
         state.isBusy ||
@@ -329,10 +326,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _onDisconnect(
-    SerialDisconnectionRequested event,
-    Emitter<SerialState> emit,
-  ) async {
+  Future<void> _onDisconnect(SerialDisconnectionRequested event, Emitter<SerialState> emit,) async {
     if (_inactive || !state.isConnected || state.isSending) return;
     _emitState(emit, state.copyWith(status: ConnectionStatus.disconnecting));
     _cancelPendingWrites();
@@ -409,12 +403,9 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _onWriteCompleted(
-    _SerialWriteCompleted event,
-    Emitter<SerialState> emit,
-  ) async {
+  Future<void> _onWriteCompleted(_SerialWriteCompleted event, Emitter<SerialState> emit,) async {
     final write = event.write;
-    if (_activeWrite != write) return;
+    if (!identical(_activeWrite, write)) return;
     var success = false;
     try {
       if (_inactive || !state.isConnected) return;
@@ -462,10 +453,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     }
   }
 
-  Future<void> _connectionFailed(
-    Object error,
-    Emitter<SerialState> emit,
-  ) async {
+  Future<void> _connectionFailed(Object error, Emitter<SerialState> emit,) async {
     if (_inactive || !state.isConnected) return;
     _emitState(
       emit,
@@ -503,11 +491,7 @@ class SerialBloc extends Bloc<SerialEvent, SerialState> {
     );
   }
 
-  void _append(
-    TrafficDirection direction,
-    Uint8List bytes,
-    Emitter<SerialState> emit,
-  ) {
+  void _append(TrafficDirection direction, Uint8List bytes, Emitter<SerialState> emit,) {
     if (_inactive || bytes.isEmpty) return;
     var historyBytes = state.historyBytes;
     var droppedRecords = state.droppedRecords;

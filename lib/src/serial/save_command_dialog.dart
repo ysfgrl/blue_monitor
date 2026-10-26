@@ -1,23 +1,14 @@
-part of 'monitor_screen.dart';
+part of 'serial_terminal.dart';
 
 class _SaveCommandDialog extends StatefulWidget {
-  const _SaveCommandDialog({
-    required this.initialText,
-    required this.mode,
-    required this.cr,
-    required this.lf,
-    required this.existingNames,
-    required this.onSave,
-    this.initialName = '',
-    this.isEditing = false,
-  });
+  const _SaveCommandDialog({required this.initialText, required this.mode, required this.cr, required this.lf, required this.existingNames, required this.onSave, this.initialName = '', this.isEditing = false,});
 
   final String initialText;
   final InputMode mode;
   final bool cr;
   final bool lf;
   final Set<String> existingNames;
-  final Future<void> Function(SavedCommand command) onSave;
+  final Future<void> Function(SerialCommand command) onSave;
   final String initialName;
   final bool isEditing;
 
@@ -37,7 +28,7 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
 
   Future<void> _save() async {
     if (_saving || !_form.currentState!.validate()) return;
-    final command = SavedCommand(
+    final command = SerialCommand(
       name: _name.text.trim(),
       text: _text.text,
       mode: _mode,
@@ -146,7 +137,7 @@ class _SaveCommandDialogState extends State<_SaveCommandDialog> {
                     ),
                     validator: (value) {
                       try {
-                        encodeInput(value ?? '', _mode);
+                        SerialHelper.encodeInput(value ?? '', _mode);
                         return null;
                       } on FormatException catch (error) {
                         return error.message;

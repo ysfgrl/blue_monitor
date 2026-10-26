@@ -1,12 +1,7 @@
-part of 'monitor_screen.dart';
+part of 'serial_terminal.dart';
 
 class SendDataWidget extends StatefulWidget {
-  const SendDataWidget({
-    super.key,
-    required this.isConnected,
-    required this.isSending,
-    required this.onSend,
-  });
+  const SendDataWidget({super.key, required this.isConnected, required this.isSending, required this.onSend,});
 
   final bool isConnected;
   final bool isSending;
@@ -21,7 +16,7 @@ class _SendDataWidgetState extends State<SendDataWidget> {
   final _inputFocus = FocusNode();
   final _commandsScroll = ScrollController();
   final _commandStore = SavedCommandStore();
-  List<SavedCommand> _commands = [];
+  List<SerialCommand> _commands = [];
   bool _loadingCommands = true;
   bool _commandsLoadFailed = false;
   bool _commandDialogOpen = false;
@@ -63,7 +58,7 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     if (_commandsLocked) return;
     setState(() => _commandDialogOpen = true);
     try {
-      final command = await showDialog<SavedCommand>(
+      final command = await showDialog<SerialCommand>(
         context: context,
         barrierDismissible: false,
         builder: (_) => _SaveCommandDialog(
@@ -111,7 +106,7 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     }
   }
 
-  void _selectCommand(SavedCommand command) {
+  void _selectCommand(SerialCommand command) {
     if (_isSending) return;
     setState(() {
       _input.value = TextEditingValue(
@@ -131,13 +126,13 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     var text = _input.text;
     try {
       if (text.isNotEmpty) {
-        final bytes = encodeInput(text, _mode);
+        final bytes = SerialHelper.encodeInput(text, _mode);
         if (mode == InputMode.ascii && bytes.any((byte) => byte > 127)) {
           throw const FormatException(
             'Veri ASCII dışında baytlar içeriyor. HEX olarak düzenleyebilirsiniz.',
           );
         }
-        text = mode == InputMode.hex ? formatHex(bytes) : ascii.decode(bytes);
+        text = mode == InputMode.hex ? SerialHelper.formatHex(bytes) : ascii.decode(bytes);
       }
       setState(() {
         _input.value = TextEditingValue(
@@ -159,7 +154,7 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     late final Uint8List bytes;
     try {
       bytes = Uint8List.fromList([
-        ...encodeInput(text, _mode),
+        ...SerialHelper.encodeInput(text, _mode),
         if (_cr) 0x0D,
         if (_lf) 0x0A,
       ]);
@@ -175,12 +170,12 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     _inputFocus.requestFocus();
   }
 
-  Future<void> _sendCommand(SavedCommand command) async {
+  Future<void> _sendCommand(SerialCommand command) async {
     if (!widget.isConnected || _commandsLocked) return;
     late final Uint8List bytes;
     try {
       bytes = Uint8List.fromList([
-        ...encodeInput(command.text, command.mode),
+        ...SerialHelper.encodeInput(command.text, command.mode),
         if (command.cr) 0x0D,
         if (command.lf) 0x0A,
       ]);
@@ -380,7 +375,7 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     ),
   );
 
-  Widget _savedCommandItem(SavedCommand command, bool canSend) {
+  Widget _savedCommandItem(SerialCommand command, bool canSend) {
     return Padding(
       padding: const EdgeInsets.only(right: 6),
       child: OutlinedButton(
@@ -399,35 +394,24 @@ class _SendDataWidgetState extends State<SendDataWidget> {
     );
   }
 
-  Widget _endingCheckbox(
-    String label,
-    bool value,
-    ValueChanged<bool> onChanged,
-  ) => Tooltip(
-    message: label == 'CR'
-        ? 'Satır sonuna CR (0D) ekle'
-        : 'Satır sonuna LF (0A) ekle',
-    child: MergeSemantics(
-      child: InkWell(
-        onTap: _isSending ? null : () => onChanged(!value),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Checkbox(
-              key: ValueKey('line-ending-${label.toLowerCase()}'),
-              value: value,
-              visualDensity: VisualDensity.compact,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              onChanged: _isSending
-                  ? null
-                  : (selected) {
-                      if (selected != null) onChanged(selected);
-                    },
-            ),
-            Text(label, style: const TextStyle(fontSize: 11)),
-          ],
+  Widget _endingCheckbox(String label, bool value, ValueChanged<bool> onChanged,) => InkWell(
+    onTap: _isSending ? null : () => onChanged(!value),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Checkbox(
+          key: ValueKey('line-ending-${label.toLowerCase()}'),
+          value: value,
+          visualDensity: VisualDensity.compact,
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          onChanged: _isSending
+              ? null
+              : (selected) {
+            if (selected != null) onChanged(selected);
+          },
         ),
-      ),
+        Text(label, style: const TextStyle(fontSize: 11)),
+      ],
     ),
   );
 }

@@ -3,9 +3,10 @@
 Pigeon-based serial port API for Flutter. Linux implements port enumeration,
 connection management, binary writes, and read/connection event channels using
 POSIX serial I/O. Android implements USB host serial discovery, permission
-requests, connection management, binary writes, and both event streams. iOS,
-macOS, and Windows native backends remain unimplemented; their bindings are
-generated.
+requests, connection management, binary writes, and both event streams. macOS
+implements IOKit port discovery and POSIX serial I/O through the generated
+Pigeon API. iOS and Windows native backends remain unimplemented; their
+bindings are generated.
 Web is implemented using the browser's Web Serial API and the same public Dart
 models and streams, without native Pigeon channels.
 
@@ -194,9 +195,26 @@ unsupported. If an in-flight write times out, the connection is closed and a
 `write-timeout` error is returned: the browser does not expose the partial byte
 count. Disconnecting aborts pending writes and releases stream locks.
 
+## macOS
+
+Ports are discovered through IOKit's `IOSerialBSDClient` services and listed
+using their `/dev/cu.*` callout paths, without opening the devices. The plugin
+registers the generated Pigeon host API and both generated event stream handlers.
+Connections use exclusive, nonblocking descriptors. Reads and queued writes
+have a bounded I/O budget every 10 ms on the main dispatch queue. Writes return
+the actual byte count on timeout; zero requests one nonblocking attempt.
+Device removal closes the port and emits a disconnected event with an error.
+
+Baud rates are applied through `IOSSIOSPEED`; support depends on the device
+driver. Data bits 5–8, one/two stop bits, none/odd/even parity, and none/RTS-CTS/
+XON-XOFF flow control are supported. Unsupported settings return an error.
+App Sandbox must be disabled in the consuming app for local shell access;
+serial device access is also subject to the consuming app's permissions.
+After changing native code, stop the app completely and run it again.
+
 ## Native backend contract
 
-The other native plugins were reviewed: iOS, macOS, and Windows still
+The other native plugins were reviewed: iOS and Windows still
 contain the original platform-version scaffolding. They do not enumerate ports
 yet; generated Pigeon bindings alone do not implement device discovery.
 
