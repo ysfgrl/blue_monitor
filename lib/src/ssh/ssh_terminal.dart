@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:serial_monitor/src/ssh/ssh_session_list_tab.dart';
 
 import '../bloc/env_bloc/env_bloc.dart';
 import '../bloc/ssh/ssh_list_bloc.dart';
@@ -293,7 +294,7 @@ class _SshTerminalState extends State<_SshTerminalView>
                               enabled: _selectedIndex == 0,
                               child: ExcludeFocus(
                                 excluding: _selectedIndex != 0,
-                                child: _buildConnections(state),
+                                child: SshSessionListTab(),
                               ),
                             ),
                           ),
@@ -326,100 +327,4 @@ class _SshTerminalState extends State<_SshTerminalView>
     },
   );
 
-  Widget _buildConnections(SshListState state) {
-    final enabled = !state.isBusy;
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                context.tr('ssh.savedConnections'),
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 16),
-              if (state.isBusy) const LinearProgressIndicator(),
-              if (state.error != null) ...[
-                Text(
-                  state.error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-                TextButton(
-                  onPressed: state.isBusy
-                      ? null
-                      : () => _bloc.add(const SshConnectionsRequested()),
-                  child: Text(context.tr('ssh.reloadConnections')),
-                ),
-              ],
-              Expanded(
-                child: state.isReady && state.connections.isEmpty
-                    ? Center(child: Text(context.tr('ssh.noSavedConnections')))
-                    : ListView.builder(
-                        itemCount: state.connections.length,
-                        itemBuilder: (context, index) {
-                          final connection = state.connections[index];
-                          return Card(
-                            child: ListTile(
-                              title: Text(
-                                connection.name,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              subtitle: Text(
-                                connection.destination,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              onTap: enabled
-                                  ? () => _openConnection(connection)
-                                  : null,
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    tooltip: context.tr('global.connect'),
-                                    onPressed: enabled
-                                        ? () => _openConnection(connection)
-                                        : null,
-                                    icon: const Icon(Icons.play_arrow_rounded),
-                                  ),
-                                  IconButton(
-                                    tooltip: context.tr('global.edit'),
-                                    onPressed: enabled
-                                        ? () => _editConnection(connection)
-                                        : null,
-                                    icon: const Icon(Icons.edit_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: context.tr('ssh.deleteConnection'),
-                                    onPressed: enabled
-                                        ? () => _bloc.add(
-                                            SshConnectionDeleted(connection.id),
-                                          )
-                                        : null,
-                                    icon: const Icon(
-                                      Icons.delete_outline_rounded,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-              FilledButton.icon(
-                onPressed: enabled && state.isReady
-                    ? () => _editConnection()
-                    : null,
-                icon: const Icon(Icons.add_rounded),
-                label: Text(context.tr('ssh.addConnection')),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

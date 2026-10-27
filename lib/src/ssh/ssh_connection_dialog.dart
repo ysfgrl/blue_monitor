@@ -76,7 +76,7 @@ class _SshConnectionDialogState extends State<SshConnectionDialog> {
       _testBloc = bloc;
     });
     if (previous != null) unawaited(previous.close());
-    bloc.add(const SshConnectRequested(testOnly: true));
+    bloc.add(const SshConnectRequested());
   }
 
   void _save() {
