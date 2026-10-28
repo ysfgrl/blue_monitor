@@ -9,10 +9,13 @@ enum SshListStatus{
 class SshListState extends Equatable {
   const SshListState({
     this.status = SshListStatus.init,
+    required this.store,
     this.connections = const [],
+
     this.error,
   });
   final SshListStatus status;
+  final SshConnectionStore store;
   final List<SshConnectionBloc> connections;
   final String? error;
 
@@ -31,5 +34,6 @@ class SshListState extends Equatable {
     connections: connections ?? this.connections,
     status: status ?? this.status,
     error: error ,
+    store: store ,
   );
 }

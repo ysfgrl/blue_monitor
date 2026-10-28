@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:serial_monitor/src/bloc/env/env_list_bloc.dart';
 import 'package:serial_monitor/src/bloc/ssh/connection/ssh_session.dart';
-import 'package:serial_monitor/src/ssh/ssh_session_list_tab.dart';
+import 'package:serial_monitor/src/ssh/ssh_list.dart';
 
 import '../bloc/ssh/ssh_list_bloc.dart';
 import '../bloc/ssh/connection/ssh_connection_bloc.dart';
@@ -157,7 +157,7 @@ class _SshTerminalState extends State<_SshTerminalView>
                       enabled: _selectedIndex == 0,
                       child: ExcludeFocus(
                         excluding: _selectedIndex != 0,
-                        child: SshSessionListTab(),
+                        child: SshListTab(),
                       ),
                     ),
                   ),

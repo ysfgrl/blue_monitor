@@ -59,6 +59,22 @@ class EnvStore {
     return null;
   }
 
+  Future<String?> update(EnvModel env) async {
+    final environments = await list();
+    if (!env.isValid || !environments.any((item) => item.id == env.id)) {
+      return 'setting.invalidEnvironment';
+    }
+    if (environments.any((item) =>
+        item.id != env.id &&
+        item.name.trim().toLowerCase() == env.name.trim().toLowerCase())) {
+      return 'setting.environmentNameExists';
+    }
+    await _writeList([
+      for (final item in environments) item.id == env.id ? env : item,
+    ]);
+    return null;
+  }
+
   Future<void> delete(EnvModel env) async {
     final environments = await list();
     await _writeList(environments.where((item) => item.id != env.id).toList());

@@ -9,17 +9,18 @@ part 'ssh_list_state.dart';
 
 class SshListBloc extends Bloc<SshListEvent, SshListState> {
   SshListBloc({
-    required this.store,
-  }) : super(const SshListState()) {
+    required SshConnectionStore store,
+  }) : super( SshListState(
+    store: store
+  )) {
     on<SshLoadListEvent>(_loadList);
   }
-  final SshConnectionStore store;
   void _loadList(SshLoadListEvent event, Emitter<SshListState> emit) async{
     emit(state.copyWith(
       status: SshListStatus.loading
     ));
 
-    var connections = await store.load();
+    var connections = await state.store.load();
     List<SshConnectionBloc> blocs = [];
     for(var connection in connections){
       blocs.add(SshConnectionBloc(

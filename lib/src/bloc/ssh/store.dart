@@ -39,7 +39,7 @@ class SshConnectionStore {
   Future<List<SshConnection>> load() async =>
       _connections(await _readRecords());
 
-  Future<List<SshConnection>> save(SshConnection connection) async {
+  Future<bool?> save(SshConnection connection) async {
     connection.validate();
     final records = await _readRecords();
     final index = records.indexWhere((item) => item['id'] == connection.id);
@@ -49,9 +49,8 @@ class SshConnectionStore {
     } else {
       records[index] = record;
     }
-    // Metadata and passwords are committed together in a single secure value.
     await secureStore.write(key: _connectionsKey, value: jsonEncode(records));
-    return _connections(records);
+    return true;
   }
 
   Future<List<SshConnection>> delete(String id) async {

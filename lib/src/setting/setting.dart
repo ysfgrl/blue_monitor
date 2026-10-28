@@ -1,12 +1,8 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:serial_monitor/src/bloc/env/env_list_bloc.dart';
 import 'package:serial_monitor/src/env/environment_list.dart';
-import '../bloc/env/env_model.dart';
 import '../extensions/flag.dart';
-import '../env/environment_dialog.dart';
 
 class Setting extends StatelessWidget {
   const Setting({super.key});
@@ -42,18 +38,20 @@ class Setting extends StatelessWidget {
                       child: Text('${locale.flag()} ${locale.name()}'),
                     ),
                 ],
-                onChanged:  (value) {
-                  if(value == null) return;
+                onChanged: (value) {
+                  if (value == null) return;
                   context.setLocale(value);
                 },
               ),
-              const SizedBox(height: 32),
-              EnvironmentListWidget()
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Divider(height: 1),
+              ),
+              const EnvironmentListWidget(),
             ],
           ),
         ),
       ),
     ),
   );
-
 }

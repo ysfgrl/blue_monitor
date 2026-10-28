@@ -18,14 +18,15 @@ class EnvListBloc extends Bloc<EnvListEvent, EnvListState> {
     emit(state.copyWith(status: EnvListStatus.loading));
     try {
       final environments = await envStore.list();
-      final selectedId = await envStore.getSelected();
+
+      final selectedId =await envStore.getSelected();
 
 
       final List<EnvState> list =  environments.map((e) => EnvState(e, SshListBloc(
           store: SshConnectionStore(envId: e.id)
       )),).toList();
 
-      final selected = list.where((env) => env.model.id == selectedId).firstOrNull ?? list.firstOrNull;
+      final selected = list.where((env) => env.model.id == selectedId).firstOrNull;
 
       if (!emit.isDone) {
         emit(EnvListState(
@@ -47,6 +48,8 @@ class EnvListBloc extends Bloc<EnvListEvent, EnvListState> {
     }
   }
   Future<void> _select(EnvListSelect event, Emitter<EnvListState> emit) async {
+
+    envStore.select(event.env);
     emit(state.copyWith(
       selected: state.environments.where((env) => env.model.id == event.env.id).firstOrNull
     ));
