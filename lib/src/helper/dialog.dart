@@ -13,7 +13,10 @@ extension BlueDialogExtension on BuildContext {
     Alignment alignment = Alignment.bottomCenter,
     EdgeInsets margin = const EdgeInsets.all(0),
     EdgeInsets padding = const EdgeInsets.fromLTRB(14, 12, 14, 14),
-    BoxDecoration? decoration,
+    BoxDecoration decoration = const BoxDecoration(
+      color: Color(0xFF283343),
+      borderRadius: BorderRadius.all(Radius.circular(10,)),
+    ),
     Widget icon = const Icon(
       Icons.info,
       color: Color(0xFF20D99B),
@@ -24,7 +27,7 @@ extension BlueDialogExtension on BuildContext {
       color: Color(0xFFE05260),
       size: 20,
     ),
-    Widget divider = const SizedBox(height: 14,)
+    Widget divider = const Divider()
   }) {
     return showDialog<T>(
       context: this,

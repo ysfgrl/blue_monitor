@@ -2,10 +2,10 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:serial_monitor/src/bloc/env/env_list_bloc.dart';
 
-import 'bloc/env_bloc/env_bloc.dart';
-import 'bloc/env_bloc/env_model.dart';
-import 'setting/environment_dialog.dart';
+import 'bloc/env/env_model.dart';
+import 'env/environment_dialog.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -79,10 +79,8 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _environmentSelector(BuildContext context) =>
-      BlocConsumer<EnvBloc, EnvState>(
-        listenWhen: (previous, current) =>
-            previous.error != current.error && current.error != null,
+  Widget _environmentSelector(BuildContext context) => BlocConsumer<EnvListBloc, EnvListState>(
+        listenWhen: (previous, current) => previous.error != current.error && current.error != null,
         listener: (context, state) {
           if (!TickerMode.valuesOf(context).enabled) return;
           ScaffoldMessenger.of(context).showSnackBar(
@@ -92,46 +90,36 @@ class HomeScreen extends StatelessWidget {
         builder: (context, state) {
           if (state.environments.isEmpty) {
             return FilledButton.icon(
-              onPressed:
-                  state.status == EnvStatus.init ||
-                      state.status == EnvStatus.loading
-                  ? null
-                  : () => showDialog<void>(
-                      context: context,
-                      useRootNavigator: false,
-                      barrierDismissible: false,
-                      builder: (_) => BlocProvider.value(
-                        value: context.read<EnvBloc>(),
-                        child: const EnvironmentDialog(),
-                      ),
-                    ),
+              onPressed:  () async{
+                 var res = await EnvironmentDialog.show(context);
+                 if(res == null) return;
+                 if(res == true){
+
+                 }
+              },
               icon: const Icon(Icons.add),
               label: Text(context.tr('setting.createEnvironment')),
             );
           }
           return DropdownButtonFormField<EnvModel>(
             key: ValueKey(('environment', state.selected, state.status)),
-            initialValue: state.selected,
+            initialValue: state.selected?.model,
             isExpanded: true,
             decoration: InputDecoration(
               labelText: 'setting.environment'.tr(context: context),
               prefixIcon: const Icon(Icons.layers_outlined),
             ),
-            onChanged:
-                state.environments.isNotEmpty &&
-                    state.status != EnvStatus.loading
-                ? (env) {
-                    if (env != null && env != state.selected) {
-                      context.read<EnvBloc>().add(EnvSelect(env));
-                    }
-                  }
-                : null,
+            onChanged:(env) {
+              if (env != null && env != state.selected) {
+                context.read<EnvListBloc>().add(EnvListSelect(env));
+              }
+            },
             items: [
               for (final environment in state.environments)
                 DropdownMenuItem<EnvModel>(
-                  value: environment,
+                  value: environment.model,
                   child: Text(
-                    environment.name,
+                    environment.model.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

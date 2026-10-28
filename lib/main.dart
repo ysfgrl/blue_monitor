@@ -1,9 +1,9 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:serial_monitor/src/bloc/env/env_list_bloc.dart';
 
 import 'src/bloc/local_bloc/local_bloc.dart';
-import 'src/bloc/env_bloc/env_bloc.dart';
 import 'src/bloc/serial_bloc/serial_bloc.dart';
 import 'src/router.dart';
 
@@ -28,9 +28,9 @@ Future<void> main() async {
       saveLocale: true,
       child: MultiBlocProvider(
         providers: [
-          BlocProvider<EnvBloc>(
+          BlocProvider<EnvListBloc>(
             lazy: false,
-            create: (_) => EnvBloc()..add(const EnvReadList()),
+            create: (_) => EnvListBloc()..add(const EnvListReadList()),
           ),
           BlocProvider<LocalBloc>(create: (_) => LocalBloc()),
           BlocProvider<SerialBloc>(

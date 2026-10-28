@@ -10,11 +10,9 @@ part 'ssh_list_state.dart';
 class SshListBloc extends Bloc<SshListEvent, SshListState> {
   SshListBloc({
     required this.store,
-    required this.onVerifyHostKey,
   }) : super(const SshListState()) {
     on<SshLoadListEvent>(_loadList);
   }
-  final SSHHostkeyVerifyHandler onVerifyHostKey;
   final SshConnectionStore store;
   void _loadList(SshLoadListEvent event, Emitter<SshListState> emit) async{
     emit(state.copyWith(
