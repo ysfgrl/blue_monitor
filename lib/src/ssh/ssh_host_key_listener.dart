@@ -7,16 +7,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/ssh/connection/ssh_connection_bloc.dart';
 import '../helper/dialog.dart';
 
-class SshHostKeyListener extends StatelessWidget {
+class SshHostKeyAskWidget extends StatelessWidget {
   final SshConnectionState state;
-  const SshHostKeyListener({
+  const SshHostKeyAskWidget({
     super.key,
     required this.state
   });
   static Future<bool?> show(BuildContext context, SshConnectionState state){
       return context.blueDialog<bool>(
           title: Text('ssh.trustServerTitle'.tr()),
-          child: SshHostKeyListener(
+          child: SshHostKeyAskWidget(
             state: state,
           )
       );

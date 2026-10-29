@@ -16,6 +16,12 @@ class SshConnectRequested extends SshConnectionEvent {
   bool get stringify => false;
 }
 
+class SshConnectedEvent extends SshConnectionEvent {
+  const SshConnectedEvent();
+  @override
+  List<Object?> get props => [];
+}
+
 class SshDisconnectRequested extends SshConnectionEvent {
   const SshDisconnectRequested();
 }
@@ -32,6 +38,11 @@ class SshHostKeyRequestedEvt extends SshConnectionEvent {
   final SshHostKeyChallenge challenge;
   @override
   List<Object?> get props => [ challenge];
+}
+class SshNewSessionEvt extends SshConnectionEvent {
+  const SshNewSessionEvt();
+  @override
+  List<Object?> get props => [];
 }
 
 class _SshEnded extends SshConnectionEvent {

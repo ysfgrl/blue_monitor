@@ -29,8 +29,10 @@ class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
   })
     : super(SshConnectionState(connection: connection)) {
     on<SshConnectRequested>(_onConnect);
+    on<SshConnectedEvent>(_onConnected);
     on<SshDisconnectRequested>(_onDisconnect);
     on<SshHostKeyRequestedEvt>(_onHostKeyRequested);
+    on<SshNewSessionEvt>(_newSession);
     on<SshHostKeyAnswered>(_onHostKeyAnswered);
     on<_SshEnded>(_onEnded);
   }
@@ -46,9 +48,15 @@ class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
   }
 
   void _onHostKeyRequested(SshHostKeyRequestedEvt event, Emitter<SshConnectionState> emit,) {
-    emit(state.copyWith(hostKeyChallenge: event.challenge));
+    emit(state.copyWith(
+        hostKeyChallenge: event.challenge,
+        status: SshStatus.challenge
+    ));
   }
 
+  void _newSession(SshNewSessionEvt event, Emitter<SshConnectionState> emit,) {
+
+  }
   void _onHostKeyAnswered(SshHostKeyAnswered event, Emitter<SshConnectionState> emit,) {
     _keyCompleter?.complete(event.trusted);
     if(event.trusted) {
@@ -93,6 +101,11 @@ class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
     return true;
   }
 
+  Future<void> _onConnected(SshConnectedEvent event, Emitter<SshConnectionState> emit,) async {
+      emit(state.copyWith(
+        status: SshStatus.connected
+      ));
+  }
   Future<void> _onConnect(SshConnectRequested event, Emitter<SshConnectionState> emit,) async {
     if (state.isConnecting || state.isConnected) return;
     emit(state.copyWith(
@@ -115,6 +128,7 @@ class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
         authTimeout: const Duration(seconds: 30),
       );
       await client!.authenticated;
+      add(SshConnectedEvent());
     } catch (error) {
       final message = _describeError(error);
       emit(state.copyWith(
