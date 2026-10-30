@@ -26,6 +26,10 @@ class SshDisconnectRequested extends SshConnectionEvent {
   const SshDisconnectRequested();
 }
 
+class SshErrorDismissed extends SshConnectionEvent {
+  const SshErrorDismissed();
+}
+
 class SshHostKeyAnswered extends SshConnectionEvent {
   const SshHostKeyAnswered(this.trusted);
   final bool trusted;

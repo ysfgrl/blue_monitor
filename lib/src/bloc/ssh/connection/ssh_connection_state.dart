@@ -4,10 +4,7 @@ enum SshStatus { idle, connecting, challenge,password, connected, failed }
 
 @immutable
 class SshHostKeyChallenge extends Equatable {
-  const SshHostKeyChallenge({
-    required this.type,
-    required this.fingerprint,
-  });
+  const SshHostKeyChallenge({required this.type, required this.fingerprint,});
   final String type;
   final String fingerprint;
 
@@ -17,18 +14,15 @@ class SshHostKeyChallenge extends Equatable {
 
 @immutable
 class SshConnectionState extends Equatable {
-  const SshConnectionState({
-    required this.connection,
-    this.status = SshStatus.idle,
-    this.message,
-    this.hostKeyChallenge,
-  });
+  const SshConnectionState({required this.connection, this.status = SshStatus.idle, this.message, this.hostKeyChallenge, this.sessions = const [], this.isOpeningSession = false,});
   final SshConnection connection;
   final SshStatus status;
   final String? message;
   final SshHostKeyChallenge? hostKeyChallenge;
+  final List<SshSession> sessions;
+  final bool isOpeningSession;
 
-  bool get isConnecting => status == SshStatus.connecting;
+  bool get isConnecting => status == SshStatus.connecting || status == SshStatus.challenge || status == SshStatus.password;
   bool get isConnected => status == SshStatus.connected;
   bool get hasError => status == SshStatus.failed;
 
@@ -38,16 +32,16 @@ class SshConnectionState extends Equatable {
     status,
     message,
     hostKeyChallenge,
+    sessions,
+    isOpeningSession,
   ];
 
-  SshConnectionState copyWith({
-    SshStatus? status,
-    String? message,
-    SshHostKeyChallenge? hostKeyChallenge,
-  }) => SshConnectionState(
+  SshConnectionState copyWith({SshStatus? status, String? message, SshHostKeyChallenge? hostKeyChallenge, bool clearHostKeyChallenge = false, List<SshSession>? sessions, bool? isOpeningSession,}) => SshConnectionState(
     connection: connection,
     status: status ?? this.status,
     message:  message,
-    hostKeyChallenge: hostKeyChallenge ?? this.hostKeyChallenge,
+    hostKeyChallenge: clearHostKeyChallenge ? null : hostKeyChallenge ?? this.hostKeyChallenge,
+    sessions: sessions ?? this.sessions,
+    isOpeningSession: isOpeningSession ?? this.isOpeningSession,
   );
 }

@@ -16,21 +16,43 @@ class BasePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      child: BlocBuilder<EnvListBloc, EnvListState>(
+    return BlocBuilder<EnvListBloc, EnvListState>(
 
-        builder: (context, state) {
-          if(state.status == EnvListStatus.init){
-            context.read<EnvListBloc>().add(EnvListReadList());
-          }
-          if(state.status != EnvListStatus.loaded){
-            return Center(
+      builder: (context, state) {
+        if(state.status == EnvListStatus.init){
+          context.read<EnvListBloc>().add(EnvListReadList());
+        }
+        if(state.status != EnvListStatus.loaded){
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('global.appName'.tr()),
+              actions: [
+                IconButton(
+                  tooltip: 'setting.title'.tr(),
+                  onPressed: () => context.go('/setting'),
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+              ],
+            ),
+            body: Center(
               child: CircularProgressIndicator(),
-            );
+            ),
+          );
 
-          }
-          if (state.environments.isEmpty) {
-            return Center(
+        }
+        if (state.environments.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('global.appName'.tr()),
+              actions: [
+                IconButton(
+                  tooltip: 'setting.title'.tr(),
+                  onPressed: () => context.go('/setting'),
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+              ],
+            ),
+            body: Center(
               child: SizedBox(
                 width: 500,
                 child: Column(
@@ -51,10 +73,22 @@ class BasePage extends StatelessWidget {
                   ],
                 ),
               ),
-            );
-          }
-          if(state.selected == null){
-            return Center(
+            ),
+          );
+        }
+        if(state.selected == null){
+          return Scaffold(
+            appBar: AppBar(
+              title: Text('global.appName'.tr()),
+              actions: [
+                IconButton(
+                  tooltip: 'setting.title'.tr(),
+                  onPressed: () => context.go('/setting'),
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+              ],
+            ),
+            body: Center(
               child: SizedBox(
                 width: 500,
                 child: Column(
@@ -65,13 +99,12 @@ class BasePage extends StatelessWidget {
                   ],
                 ),
               ),
-            );
-          }
+            ),
+          );
+        }
+        return child;
+      },
 
-          return child;
-        },
-
-      ),
     );
   }
 

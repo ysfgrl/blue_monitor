@@ -149,6 +149,8 @@
     "txMetadata": "↑ TX · {count} B"
   },
   "ssh": {
+    "newSession": "Open new session",
+    "selectEnvironment": "Select an environment for SSH connections.",
     "waitingForConnection": "Waiting for SSH connection.",
     "savedConnections": "Saved connections",
     "trustServerTitle": "Trust this SSH server?",

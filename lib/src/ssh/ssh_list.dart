@@ -105,6 +105,7 @@ class SshListTab extends StatelessWidget {
               itemBuilder: (context, index) {
                 final bloc = state.connections[index];
                 return SshListItem(
+                    key: ValueKey(bloc.state.connection.id),
                     bloc: bloc,
                     delete: () async{
                       try {

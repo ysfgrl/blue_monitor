@@ -149,6 +149,8 @@
     "txMetadata": "↑ TX · {count} B"
   },
   "ssh": {
+    "newSession": "Yeni oturum aç",
+    "selectEnvironment": "SSH bağlantıları için bir ortam seçin.",
     "waitingForConnection": "SSH bağlantısı bekleniyor.",
     "savedConnections": "Kayıtlı bağlantılar",
     "trustServerTitle": "SSH sunucusuna güvenilsin mi?",
