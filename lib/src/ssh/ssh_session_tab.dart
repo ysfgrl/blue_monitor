@@ -4,7 +4,11 @@ import 'package:serial_monitor/src/bloc/ssh/connection/ssh_session.dart';
 import '../term/terminal_panel.dart';
 
 class SshSessionTab extends StatelessWidget {
-  const SshSessionTab({super.key, required this.active, required this.session});
+  const SshSessionTab({
+    super.key,
+    required this.active,
+    required this.session
+  });
 
   final bool active;
   final SshSession session;

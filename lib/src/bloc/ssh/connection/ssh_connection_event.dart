@@ -8,23 +8,23 @@ sealed class SshConnectionEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class SshConnectRequested extends SshConnectionEvent {
-  const SshConnectRequested();
+class SshConnectEvent extends SshConnectionEvent {
+  const SshConnectEvent();
   @override
   List<Object?> get props => [];
   @override
   bool get stringify => false;
 }
-
+class SshDisconnectEvent extends SshConnectionEvent {
+  const SshDisconnectEvent();
+}
 class SshConnectedEvent extends SshConnectionEvent {
   const SshConnectedEvent();
   @override
   List<Object?> get props => [];
 }
 
-class SshDisconnectRequested extends SshConnectionEvent {
-  const SshDisconnectRequested();
-}
+
 
 class SshErrorDismissed extends SshConnectionEvent {
   const SshErrorDismissed();
@@ -43,6 +43,7 @@ class SshHostKeyRequestedEvt extends SshConnectionEvent {
   @override
   List<Object?> get props => [ challenge];
 }
+
 class SshNewSessionEvt extends SshConnectionEvent {
   const SshNewSessionEvt();
   @override

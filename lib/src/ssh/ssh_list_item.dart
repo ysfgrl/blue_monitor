@@ -62,14 +62,14 @@ class _SshListItemState extends State<SshListItem> {
           if (!state.isConnecting)
             IconButton(
               tooltip: context.tr(state.isConnected ? 'ssh.newSession' : state.hasError ? 'global.retry' : 'global.connect'),
-              onPressed: busy || bloc.isClosed ? null : () => bloc.add(state.isConnected ? const SshNewSessionEvt() : const SshConnectRequested()),
+              onPressed: busy || bloc.isClosed ? null : () => bloc.add(state.isConnected ? const SshNewSessionEvt() : const SshConnectEvent()),
               style: IconButton.styleFrom(foregroundColor: colors.primary),
               icon: Icon(state.isConnected ? Icons.add_rounded : Icons.play_arrow_rounded, size: 20),
             ),
           if (state.isConnected || state.isConnecting)
             IconButton(
               tooltip: context.tr(state.isConnecting ? 'global.cancelConnection' : 'global.disconnect'),
-              onPressed: bloc.isClosed ? null : () => bloc.add(const SshDisconnectRequested()),
+              onPressed: bloc.isClosed ? null : () => bloc.add(const SshDisconnectEvent()),
               icon: const Icon(Icons.link_off_rounded, size: 20),
             ),
           IconButton(
@@ -87,7 +87,7 @@ class _SshListItemState extends State<SshListItem> {
         ];
         final details = ListTile(
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          onTap: canModify && !bloc.isClosed ? () => bloc.add(const SshConnectRequested()) : null,
+          onTap: canModify && !bloc.isClosed ? () => bloc.add(const SshConnectEvent()) : null,
           title: Text(state.connection.name, maxLines: 1, overflow: TextOverflow.ellipsis),
           subtitle: Text(state.connection.destination, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.onSurfaceVariant)),
         );

@@ -17,9 +17,9 @@ part 'ssh_connection_state.dart';
 
 class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
   SshConnectionBloc({required SshConnection connection}) : super(SshConnectionState(connection: connection)) {
-    on<SshConnectRequested>(_onConnect);
+    on<SshConnectEvent>(_onConnect);
     on<SshConnectedEvent>(_onConnected);
-    on<SshDisconnectRequested>(_onDisconnect);
+    on<SshDisconnectEvent>(_onDisconnect);
     on<SshHostKeyRequestedEvt>(_onHostKeyRequested);
     on<SshNewSessionEvt>(_newSession);
     on<SshHostKeyAnswered>(_onHostKeyAnswered);
@@ -40,7 +40,7 @@ class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
   List<SshSession> get sessions => state.sessions;
   bool _current(int generation) => !_closing && !isClosed && generation == _generation;
 
-  Future<void> _onDisconnect(SshDisconnectRequested event, Emitter<SshConnectionState> emit,) async {
+  Future<void> _onDisconnect(SshDisconnectEvent event, Emitter<SshConnectionState> emit,) async {
     await _stopTransport();
     if (_closing || emit.isDone) return;
     emit(state.copyWith(status: SshStatus.idle, sessions: const [], isOpeningSession: false, clearHostKeyChallenge: true));
@@ -108,7 +108,7 @@ class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
     add(const SshNewSessionEvt());
   }
 
-  Future<void> _onConnect(SshConnectRequested event, Emitter<SshConnectionState> emit,) async {
+  Future<void> _onConnect(SshConnectEvent event, Emitter<SshConnectionState> emit,) async {
     if (_closing || state.isConnecting || state.isConnected) return;
     final generation = ++_generation;
     _verificationError = null;
@@ -182,7 +182,10 @@ class SshConnectionBloc extends Bloc<SshConnectionEvent, SshConnectionState> {
         return;
       }
       final session = SshSession(id: id, session: shell);
-      emit(state.copyWith(sessions: List.unmodifiable([...sessions, session]), isOpeningSession: false));
+      emit(state.copyWith(
+          sessions: List.unmodifiable([...sessions, session]),
+          isOpeningSession: false
+      ));
     } catch (error) {
       expired = true;
       if (!_current(generation) || emit.isDone) return;
